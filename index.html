@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Planit Noche - Astrofotografía & Vía Láctea</title>
+  <meta name="description" content="Planificador astronómico de fotografía nocturna, estrellas y Vía Láctea con calculadora de exposición, regla NPF e hiperfocal.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Planit Noche">
+  <meta name="theme-color" content="#0c0d12">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- =======================================================
+         GLOBAL TOP NAVIGATION (Acceso directo desde cualquier panel)
+         ======================================================= -->
+    <nav class="global-navbar" aria-label="Navegación principal">
+      <div class="nav-tabs-grid">
+        <button class="nav-tab-btn active" data-target="mainView" title="Planificador de Mapa y Calendario">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+          <span>Plan</span>
+        </button>
+
+        <button class="nav-tab-btn" data-target="exposureView" title="Calculadora de Exposición y Guía EV">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Exposición</span>
+        </button>
+
+        <button class="nav-tab-btn" data-target="calcView" title="Calculadora NPF de estrellas puntuales">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <span>NPF</span>
+        </button>
+
+        <button class="nav-tab-btn" data-target="hyperfocalView" title="Calculadora de Distancia Hiperfocal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Hiperfocal</span>
+        </button>
+
+        <button class="nav-tab-btn" data-target="trailsView" title="Calculadora y Simulador de Star Trails">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a9 9 0 1 0 9 9"></path>
+            <path d="M12 7a5 5 0 1 0 5 5"></path>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+          </svg>
+          <span>Trails</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ==========================================
+         PANTALLA 1: MAPA Y CALENDARIO PRINCIPAL
+         ========================================== -->
+    <main id="mainView" class="app-container screen-view active-screen">
+      
+      <!-- Top Action Bar (Ubicación GPS & Buscador) -->
+      <header class="planner-search-header">
+        <div class="search-box-wrapper">
+          <div class="search-input-group">
+            <button id="myLocationBtn" class="gps-inline-btn" title="Usar mi ubicación GPS actual">
+              <svg class="location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </button>
+            <input 
+              type="text" 
+              id="locationSearchInput" 
+              class="search-input" 
+              placeholder="Buscar ciudad o lugar (ej. Lleida, Teide...)" 
+              autocomplete="off"
+            />
+            <button id="searchBtn" class="search-action-btn" title="Buscar lugar">
+              Buscar
+            </button>
+          </div>
+          <div id="searchResults" class="search-results-dropdown hidden"></div>
+        </div>
+      </header>
+
+      <!-- Map Card Section -->
+      <section class="card-section map-section">
+        <div class="map-card">
+          <div id="map" class="map-view"></div>
+          
+          <div class="map-footer-info">
+            <div class="coords-line">
+              <span class="info-label">Coordenadas:</span>
+              <span id="coordsText" class="coords-value">41.6148, 0.6268</span>
+            </div>
+            <div class="zone-line">
+              <span class="info-label">Zona detectada:</span>
+              <span id="zoneText" class="zone-value">Europe/Madrid</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Calendar Section -->
+      <section id="calendarContainer" class="card-section calendar-section"></section>
+
+      <!-- App Footer -->
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Pulsa en un día para ver el detalle de la noche</p>
+      </footer>
+
+    </main>
+
+    <!-- ==========================================
+         PANTALLA 2: DETALLES DE LA NOCHE SELECCIONADA
+         ========================================== -->
+    <div id="detailsView" class="app-container screen-view details-screen hidden-screen">
+      
+      <div class="details-nav-bar">
+        <button id="backToCalendarBtn" class="back-nav-btn" title="Volver al mapa y calendario">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Volver al Calendario</span>
+        </button>
+        <span id="detailsLocationBadge" class="location-mini-badge">📍 Ubicación</span>
+      </div>
+
+      <div class="night-switcher-bar">
+        <button id="prevNightBtn" class="night-switch-btn" title="Noche anterior">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          <span>Noche anterior</span>
+        </button>
+        <button id="nextNightBtn" class="night-switch-btn" title="Noche siguiente">
+          <span>Noche siguiente</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+
+      <section id="detailsContent" class="card-section"></section>
+
+      <div class="details-bottom-actions">
+        <button id="bottomBackBtn" class="bottom-back-btn">
+          ← Volver al mapa y calendario
+        </button>
+      </div>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Astrofotografía y Centro Galáctico</p>
+      </footer>
+
+    </div>
+
+    <!-- ==========================================
+         PANTALLA 3: CALCULADORA DE ESTRELLAS COMO PUNTOS (NPF)
+         ========================================== -->
+    <div id="calcView" class="app-container screen-view calc-screen hidden-screen">
+      
+      <div class="panel-header-simple">
+        <h1 class="panel-header-title">Estrellas como Puntos (NPF)</h1>
+      </div>
+
+      <section class="calc-form-container">
+        <div class="calc-card">
+          <div class="calc-field-group">
+            <label for="sensorTypeSelect" class="calc-field-label">TIPO DE SENSOR</label>
+            <div class="calc-select-wrapper">
+              <select id="sensorTypeSelect" class="calc-select">
+                <option value="full-frame" selected>Full Frame (35mm)</option>
+                <option value="apsc-sony">APS-C (Sony / Nikon / Fuji 1.5x)</option>
+                <option value="apsc-canon">APS-C (Canon 1.6x)</option>
+                <option value="m43">Micro 4/3 (Olympus / Panasonic 2.0x)</option>
+                <option value="medium-format">Formato Medio (Fujifilm GFX / Hasselblad)</option>
+                <option value="1inch">Sensor 1" (Sony RX100 / Drones)</option>
+              </select>
+              <svg class="select-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+
+          <div class="calc-field-group">
+            <label for="mpInput" class="calc-field-label">MEGAPÍXELES</label>
+            <input type="number" id="mpInput" class="calc-input" value="26" min="1" max="200" step="1" />
+          </div>
+        </div>
+
+        <div class="calc-card">
+          <div class="calc-slider-header">
+            <span class="calc-slider-label">Focal (mm)</span>
+            <span class="calc-highlight-text"><strong id="focalDisplay">13</strong> mm</span>
+          </div>
+          <div class="calc-slider-row">
+            <input type="range" id="focalSlider" class="calc-range-slider" min="8" max="200" step="1" value="13" />
+            <input type="number" id="focalNumberInput" class="calc-badge-input" min="8" max="600" value="13" />
+          </div>
+        </div>
+
+        <div class="calc-card">
+          <div class="calc-slider-header">
+            <span class="calc-slider-label">Apertura (f/)</span>
+            <span class="calc-highlight-text">f/<strong id="apertureDisplay">2.8</strong></span>
+          </div>
+          <div class="calc-slider-row">
+            <input type="range" id="apertureSlider" class="calc-range-slider" min="1" max="16" step="0.1" value="2.8" />
+            <input type="text" id="apertureNumberInput" class="calc-badge-input" value="2,8" />
+          </div>
+        </div>
+
+        <div class="calc-result-card">
+          <div class="result-title">TIEMPO MÁXIMO (NPF)</div>
+          <div class="result-big-value">
+            <span id="npfResultValue">20.84</span><span class="result-unit">s</span>
+          </div>
+          <div class="result-comparison">
+            vs Regla 500: <strong id="rule500Value">38.5s</strong>
+          </div>
+        </div>
+
+        <div class="calc-info-box">
+          <p>💡 La <strong>Regla NPF</strong> calcula el tiempo de exposición óptimo para que las estrellas aparezcan como puntos nítidos sin trazos.</p>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Calculadora NPF de Astrofotografía</p>
+      </footer>
+
+    </div>
+
+    <!-- ==========================================
+         PANTALLA 4: CALCULADORA DE DISTANCIA HIPERFOCAL
+         ========================================== -->
+    <div id="hyperfocalView" class="app-container screen-view hyperfocal-screen hidden-screen">
+      
+      <div class="hyper-title-block">
+        <h1 class="hyper-main-title">Distancia Hiperfocal</h1>
+        <p class="hyper-top-subtitle">ENFOCA A: <strong id="topFocusDistanceText">29.2 METROS</strong></p>
+      </div>
+
+      <section class="calc-form-container">
+        <div class="calc-card">
+          <div class="calc-field-group">
+            <label for="hyperSensorSelect" class="calc-field-label">SENSOR</label>
+            <div class="calc-select-wrapper">
+              <select id="hyperSensorSelect" class="calc-select">
+                <option value="0.030" selected>Full Frame (35mm) (c=0.03mm)</option>
+                <option value="0.020">APS-C (Sony / Nikon / Fuji 1.5x) (c=0.020mm)</option>
+                <option value="0.019">APS-C (Canon 1.6x) (c=0.019mm)</option>
+                <option value="0.015">Micro 4/3 (2.0x) (c=0.015mm)</option>
+                <option value="0.050">Formato Medio (c=0.050mm)</option>
+                <option value="0.011">Sensor 1" (c=0.011mm)</option>
+              </select>
+              <svg class="select-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-card">
+          <div class="calc-slider-header">
+            <span class="calc-slider-label">DISTANCIA FOCAL (MM)</span>
+            <span class="calc-highlight-text"><strong id="hyperFocalDisplay">35</strong> mm</span>
+          </div>
+          <div class="calc-slider-row">
+            <input type="range" id="hyperFocalSlider" class="calc-range-slider" min="10" max="200" step="1" value="35" />
+            <input type="number" id="hyperFocalNumberInput" class="calc-badge-input" min="10" max="600" value="35" />
+          </div>
+        </div>
+
+        <div class="calc-card">
+          <div class="calc-slider-header">
+            <span class="calc-slider-label">APERTURA</span>
+            <span class="calc-highlight-text">f/<strong id="hyperApertureDisplay">1.4</strong></span>
+          </div>
+          <div class="calc-slider-row">
+            <input type="range" id="hyperApertureSlider" class="calc-range-slider" min="1" max="22" step="0.1" value="1.4" />
+            <input type="text" id="hyperApertureNumberInput" class="calc-badge-input" value="1,4" />
+          </div>
+        </div>
+
+        <div class="calc-card hyper-result-box">
+          <div class="hyper-enfoca-label">ENFOCA A</div>
+          <div class="hyper-big-number-row">
+            <span id="hyperDistanceValue" class="hyper-big-number">29.2</span>
+            <span class="hyper-unit-text">Metros</span>
+          </div>
+          
+          <div class="hyper-sharpness-hint">
+            TENDRÁS NITIDEZ DESDE EL LÍMITE CERCANO HASTA EL INFINITO.
+          </div>
+
+          <div class="dof-bar-container">
+            <div class="dof-blur-section">
+              <span>BLUR</span>
+            </div>
+            <div class="dof-sharp-section">
+              <span id="nearLimitBadge" class="near-limit-marker">14.6m</span>
+              <div class="dof-sharp-content">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>SHARP</span>
+              </div>
+              <span class="infinity-symbol">∞</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-info-box">
+          <p>💡 Enfocando a la <strong>Distancia Hiperfocal</strong>, todo desde la mitad de esa distancia (<strong id="nearLimitText">14.6m</strong>) hasta el infinito quedará perfectamente nítido.</p>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Calculadora de Distancia Hiperfocal</p>
+      </footer>
+
+    </div>
+
+    <!-- ==========================================
+         PANTALLA 5: CALCULADORA DE EXPOSICIÓN (SIN RÓTULOS SUPERIORES)
+         ========================================== -->
+    <div id="exposureView" class="app-container screen-view exposure-screen hidden-screen">
+      
+      <!-- Main Exposure Title Block -->
+      <div class="exp-title-block">
+        <h1 class="exp-main-title">Calculadora de Exposición</h1>
+        <p class="exp-ev-subtitle">Valor de Exposición (EV): <strong id="calculatedEvValue">-8.7</strong></p>
+      </div>
+
+      <!-- TRIÁNGULO DE EXPOSICIÓN (3 CARDS CON STEPS Y LOCK) -->
+      <section class="exposure-triangle-grid">
+        
+        <!-- 1. ISO Card -->
+        <div class="exp-param-card">
+          <div class="param-header">
+            <span class="param-name">ISO</span>
+            <button id="lockIsoBtn" class="lock-icon-btn" title="Bloquear ISO">
+              <span class="lock-symbol">🔓</span>
+            </button>
+          </div>
+          <div id="expIsoValue" class="param-big-val">12800</div>
+          <div class="param-stepper">
+            <button id="isoMinusBtn" class="step-btn">-</button>
+            <button id="isoPlusBtn" class="step-btn">+</button>
+          </div>
+        </div>
+
+        <!-- 2. APERTURA Card -->
+        <div class="exp-param-card">
+          <div class="param-header">
+            <span class="param-name">APERTURA</span>
+            <button id="lockApertureBtn" class="lock-icon-btn" title="Bloquear Apertura">
+              <span class="lock-symbol">🔓</span>
+            </button>
+          </div>
+          <div id="expApertureValue" class="param-big-val">f/1.4</div>
+          <div class="param-stepper">
+            <button id="apertureMinusBtn" class="step-btn">-</button>
+            <button id="aperturePlusBtn" class="step-btn">+</button>
+          </div>
+        </div>
+
+        <!-- 3. VELOCIDAD Card -->
+        <div class="exp-param-card">
+          <div class="param-header">
+            <span class="param-name">VELOCIDAD</span>
+            <button id="lockSpeedBtn" class="lock-icon-btn active-lock" title="Bloquear Velocidad">
+              <span class="lock-symbol">🔒</span>
+            </button>
+          </div>
+          <div id="expSpeedValue" class="param-big-val">6s</div>
+          <div class="param-stepper">
+            <button id="speedMinusBtn" class="step-btn">-</button>
+            <button id="speedPlusBtn" class="step-btn">+</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TARJETA CRONÓMETRO -->
+      <section class="timer-card">
+        <div class="timer-title">CRONÓMETRO</div>
+        <div class="timer-big-display">
+          <span id="timerSecondsText">6</span><span class="timer-unit">s</span>
+        </div>
+        <div class="timer-buttons-row">
+          <button id="startTimerBtn" class="timer-btn timer-btn-primary">Iniciar</button>
+          <button id="resetTimerBtn" class="timer-btn timer-btn-secondary">Reiniciar</button>
+        </div>
+      </section>
+
+      <!-- DESPLEGABLE: GUÍA DE VALORES EV (AL FINAL DEL PANEL) -->
+      <div class="ev-guide-accordion">
+        <button id="toggleEvGuideBtn" class="ev-guide-header-btn">
+          <span class="ev-guide-title">GUÍA DE VALORES EV (REF. ISO 100)</span>
+          <svg id="evGuideChevron" class="chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+
+        <div id="evGuideBody" class="ev-guide-content hidden-drawer">
+          <div class="ev-guide-intro">
+            El sistema EV predice la exposición. Valores calculados para ISO 100. Toca cualquier fila para cargar su valor.
+          </div>
+
+          <!-- Categoría 1: Altas Luces y Paisaje Diurno -->
+          <div class="ev-category-block">
+            <div class="ev-category-header">1. ALTAS LUCES Y PAISAJE DIURNO</div>
+            <div class="ev-table">
+              <div class="ev-row" data-ev="16">
+                <span class="ev-num">16</span>
+                <div class="ev-desc">
+                  <strong>Sol brillante en nieve/arena</strong>
+                  <small>Montaña nevada o desierto, sol cenital.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="15">
+                <span class="ev-num">15</span>
+                <div class="ev-desc">
+                  <strong>Sol brillante (Sunny 16)</strong>
+                  <small>Paisaje estándar, cielo despejado, sombras duras.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="14">
+                <span class="ev-num">14</span>
+                <div class="ev-desc">
+                  <strong>Sol débil o neblina</strong>
+                  <small>Nubes finas, luz más suave.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="13">
+                <span class="ev-num">13</span>
+                <div class="ev-desc">
+                  <strong>Nublado brillante</strong>
+                  <small>Sombras apenas perceptibles. Bosques.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="12">
+                <span class="ev-num">12</span>
+                <div class="ev-desc">
+                  <strong>Nublado / Sombra</strong>
+                  <small>Día gris o sombra proyectada.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Categoría 2: Transición: Hora Dorada y Azul -->
+          <div class="ev-category-block">
+            <div class="ev-category-header">2. TRANSICIÓN: HORA DORADA Y AZUL</div>
+            <div class="ev-table">
+              <div class="ev-row" data-ev="11">
+                <span class="ev-num">11</span>
+                <div class="ev-desc">
+                  <strong>Atardecer temprano</strong>
+                  <small>Sol bajo, colores saturados.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="10">
+                <span class="ev-num">10</span>
+                <div class="ev-desc">
+                  <strong>Tras el ocaso</strong>
+                  <small>Brillo residual. Tiempos más largos.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="9">
+                <span class="ev-num">9</span>
+                <div class="ev-desc">
+                  <strong>Hora Dorada tardía</strong>
+                  <small>Transición a sombras profundas.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="8">
+                <span class="ev-num">8</span>
+                <div class="ev-desc">
+                  <strong>Hora Azul (Pico)</strong>
+                  <small>Azul eléctrico característico.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="7">
+                <span class="ev-num">7</span>
+                <div class="ev-desc">
+                  <strong>Hora Azul tardía</strong>
+                  <small>Pérdida de detalle en sombras.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Categoría 3: Urbano y Nocturna Civil -->
+          <div class="ev-category-block">
+            <div class="ev-category-header">3. URBANO Y NOCTURNA CIVIL</div>
+            <div class="ev-table">
+              <div class="ev-row" data-ev="6">
+                <span class="ev-num">6</span>
+                <div class="ev-desc">
+                  <strong>Calles muy iluminadas / Escaparates</strong>
+                  <small>Zonas comerciales activas.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="5">
+                <span class="ev-num">5</span>
+                <div class="ev-desc">
+                  <strong>Tráfico nocturno / Estelas de luz</strong>
+                  <small>Carreteras y avenidas con tráfico continuo.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="4">
+                <span class="ev-num">4</span>
+                <div class="ev-desc">
+                  <strong>Monumentos iluminados</strong>
+                  <small>Castillos, fuentes y fachadas con focos.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="3">
+                <span class="ev-num">3</span>
+                <div class="ev-desc">
+                  <strong>Calles residenciales con farolas</strong>
+                  <small>Farolas dispersas de sodio/LED.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="1">
+                <span class="ev-num">1</span>
+                <div class="ev-desc">
+                  <strong>Fogatas / Luz de velas</strong>
+                  <small>Luz tenue de fuego en primer plano.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Categoría 4: Astrofotografía y Paisaje Nocturno -->
+          <div class="ev-category-block">
+            <div class="ev-category-header">4. ASTROFOTOGRAFÍA Y PAISAJE NOCTURNO</div>
+            <div class="ev-table">
+              <div class="ev-row" data-ev="0">
+                <span class="ev-num">0</span>
+                <div class="ev-desc">
+                  <strong>Luna Llena sobre paisaje claro</strong>
+                  <small>Nieve o arena iluminada por luna llena.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="-2">
+                <span class="ev-num">-2</span>
+                <div class="ev-desc">
+                  <strong>Luna en Cuarto Creciente</strong>
+                  <small>Sombras marcadas bajo la luna.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="-4">
+                <span class="ev-num">-4</span>
+                <div class="ev-desc">
+                  <strong>Paisaje bajo Luna Creciente fina</strong>
+                  <small>Luz sutil con estrellas de fondo.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="-6">
+                <span class="ev-num">-6</span>
+                <div class="ev-desc">
+                  <strong>Cielo estrellado (con algo de contaminación)</strong>
+                  <small>Paisaje nocturno cerca de poblaciones.</small>
+                </div>
+              </div>
+              <div class="ev-row active-ev-row" data-ev="-8.7">
+                <span class="ev-num">-8.7</span>
+                <div class="ev-desc">
+                  <strong>Vía Láctea & Cielo Oscuro (Bortle 3-4)</strong>
+                  <small>Astrofotografía de Vía Láctea nítida.</small>
+                </div>
+              </div>
+              <div class="ev-row" data-ev="-11">
+                <span class="ev-num">-11</span>
+                <div class="ev-desc">
+                  <strong>Cielo Profundo / Cielo Prístino (Bortle 1-2)</strong>
+                  <small>Oscuridad astronómica total, sin polución.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Calculadora de Exposición Nocturna</p>
+      </footer>
+
+    </div>
+
+    <!-- ====================================================================
+         PANTALLA 6: CALCULADORA Y SIMULADOR DE STAR TRAILS
+         ==================================================================== -->
+    <div id="trailsView" class="app-container screen-view trails-screen hidden-screen">
+      
+      <!-- Title Header -->
+      <div class="panel-header-simple">
+        <h1 class="panel-header-title trails-title">Star Trails &amp; Circumpolares</h1>
+        <p class="trails-subtitle">Simulador visual de trazos estelares y calculadora de sesión</p>
+      </div>
+
+      <!-- 1. SIMULADOR FOTOGRÁFICO (CANVAS VIEWPORT) -->
+      <div class="trails-viewport-card">
+        
+        <!-- Controls Top Bar: Direction & Style -->
+        <div class="trails-view-controls">
+          <div class="trails-dir-group" role="group" aria-label="Orientación de cámara">
+            <button class="trails-dir-btn active" data-dir="north">Norte (Polar)</button>
+            <button class="trails-dir-btn" data-dir="east">Este</button>
+            <button class="trails-dir-btn" data-dir="south">Sur</button>
+            <button class="trails-dir-btn" data-dir="west">Oeste</button>
+          </div>
+          <button id="trailsCometBtn" class="trails-style-toggle-btn" title="Alternar efecto cometa">
+            <span class="comet-icon">💫</span> Cometa: <strong id="cometStatusText">OFF</strong>
+          </button>
+        </div>
+
+        <!-- Canvas Container Frame -->
+        <div class="trails-canvas-frame">
+          <canvas id="trailsCanvas" class="trails-canvas"></canvas>
+          <div class="trails-canvas-overlay">
+            <span id="trailsAngleBadge" class="trails-overlay-badge">📐 30.0° de rotación</span>
+            <span id="trailsDirBadge" class="trails-overlay-badge dir-badge">Orientación: Norte</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. SELECTOR INTERACTIVO DE TIEMPO -->
+      <div class="trails-card">
+        <div class="trails-card-header">
+          <span class="trails-card-title">TIEMPO TOTAL DE SESIÓN</span>
+          <span id="trailsDurationValDisplay" class="trails-highlight-val">2h 00m</span>
+        </div>
+
+        <div class="trails-slider-wrapper">
+          <input type="range" id="trailsDurationSlider" class="trails-range-slider" min="15" max="360" step="15" value="120" />
+          <div class="trails-slider-scale">
+            <span>15m</span>
+            <span>1h</span>
+            <span>2h</span>
+            <span>3h</span>
+            <span>4h</span>
+            <span>6h</span>
+          </div>
+        </div>
+
+        <!-- Quick Duration Preset Chips -->
+        <div class="trails-chips-row">
+          <button class="trails-chip-btn" data-minutes="30">30 min</button>
+          <button class="trails-chip-btn" data-minutes="60">1 hora</button>
+          <button class="trails-chip-btn" data-minutes="90">1.5 horas</button>
+          <button class="trails-chip-btn active" data-minutes="120">2 horas</button>
+          <button class="trails-chip-btn" data-minutes="180">3 horas</button>
+          <button class="trails-chip-btn" data-minutes="240">4 horas</button>
+        </div>
+      </div>
+
+      <!-- 3. CONFIGURACIÓN DEL INTERVALÓMETRO -->
+      <div class="trails-card">
+        <div class="trails-card-header">
+          <span class="trails-card-title">AJUSTES DEL INTERVALÓMETRO</span>
+        </div>
+
+        <div class="trails-settings-grid">
+          
+          <!-- Tiempo por Foto -->
+          <div class="setting-field">
+            <label class="setting-label">Exposición por toma</label>
+            <select id="trailsExpTimeSelect" class="trails-select">
+              <option value="15">15 segundos</option>
+              <option value="20">20 segundos</option>
+              <option value="25">25 segundos</option>
+              <option value="30" selected>30 segundos</option>
+              <option value="60">60 segundos</option>
+            </select>
+          </div>
+
+          <!-- Intervalo entre Fotos -->
+          <div class="setting-field">
+            <label class="setting-label">Intervalo de disparo</label>
+            <select id="trailsIntervalSelect" class="trails-select">
+              <option value="1" selected>1 segundo</option>
+              <option value="2">2 segundos</option>
+              <option value="3">3 segundos</option>
+              <option value="5">5 segundos</option>
+            </select>
+          </div>
+
+          <!-- Formato de Guardado -->
+          <div class="setting-field full-width">
+            <label class="setting-label">Formato de imagen</label>
+            <div class="trails-format-toggle">
+              <button class="format-btn active" data-format="raw">RAW (~35 MB)</button>
+              <button class="format-btn" data-format="jpg">JPG (~12 MB)</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4. MÉTRICAS Y RESULTADOS CALCULADOS -->
+      <div class="trails-metrics-grid">
+        
+        <!-- Total de Fotos -->
+        <div class="trails-metric-card">
+          <div class="metric-icon-wrap">📸</div>
+          <div class="metric-info">
+            <span class="metric-title">TOTAL DE FOTOS</span>
+            <div class="metric-big-val"><span id="metricTotalPhotos">232</span> <small>tomas</small></div>
+          </div>
+        </div>
+
+        <!-- Ángulo de Trazo -->
+        <div class="trails-metric-card">
+          <div class="metric-icon-wrap">📐</div>
+          <div class="metric-info">
+            <span class="metric-title">ÁNGULO DE TRAZO</span>
+            <div class="metric-big-val"><span id="metricTrailAngle">30.0°</span> <small>rotación</small></div>
+          </div>
+        </div>
+
+        <!-- Espacio en Tarjeta SD -->
+        <div class="trails-metric-card">
+          <div class="metric-icon-wrap">💾</div>
+          <div class="metric-info">
+            <span class="metric-title">TARJETA SD</span>
+            <div class="metric-big-val"><span id="metricSdSpace">8.1</span> <small>GB requeridos</small></div>
+          </div>
+        </div>
+
+        <!-- Duración Timelapse -->
+        <div class="trails-metric-card">
+          <div class="metric-icon-wrap">🎬</div>
+          <div class="metric-info">
+            <span class="metric-title">TIMELAPSE (24 fps)</span>
+            <div class="metric-big-val"><span id="metricTimelapseDuration">9.7s</span> <small>de vídeo</small></div>
+          </div>
+        </div>
+
+        <!-- Baterías Estimadas -->
+        <div class="trails-metric-card full-width">
+          <div class="metric-icon-wrap">🔋</div>
+          <div class="metric-info">
+            <span class="metric-title">ESTIMACIÓN DE BATERÍA</span>
+            <div class="metric-big-val"><span id="metricBatteries">1 Batería</span> <small>(aprox. 350-450 disparos/batería)</small></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 5. CONSEJO PROFESIONAL -->
+      <div class="trails-pro-tip">
+        <span class="tip-icon">💡</span>
+        <p><strong>Consejo de Dark Night:</strong> Mantén el intervalo entre disparos lo más corto posible (1s a 2s) y desactiva la <em>Reducción de Ruido en Larga Exposición</em> de tu cámara para que los trazos de las estrellas sean perfectamente continuos y sin huecos negros.</p>
+      </div>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Planificador y Simulador de Star Trails</p>
+      </footer>
+
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- App JS Bundle -->
+  <script src="app.bundle.js"></script>
+</body>
+</html>
