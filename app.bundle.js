@@ -2882,6 +2882,19 @@
     let currentLat = 41.6148;
     let currentLng = 0.6268;
     let currentLocationName = 'Lleida';
+
+    // Read last known location from localStorage if available
+    try {
+      const savedLat = parseFloat(localStorage.getItem('planit_last_lat'));
+      const savedLng = parseFloat(localStorage.getItem('planit_last_lng'));
+      const savedName = localStorage.getItem('planit_last_name');
+      if (!isNaN(savedLat) && !isNaN(savedLng)) {
+        currentLat = savedLat;
+        currentLng = savedLng;
+        if (savedName) currentLocationName = savedName;
+      }
+    } catch (e) {}
+
     let selectedDate = new Date();
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid';
 
@@ -3106,6 +3119,10 @@
     function handleLocationChanged(lat, lng) {
       currentLat = lat;
       currentLng = lng;
+      try {
+        localStorage.setItem('planit_last_lat', lat.toString());
+        localStorage.setItem('planit_last_lng', lng.toString());
+      } catch (e) {}
       updateCoordsDisplay(lat, lng);
 
       // Refresh azimuth lines for the current selected date
@@ -3118,6 +3135,9 @@
       reverseGeocode(lat, lng).then(res => {
         if (res && res.name) {
           currentLocationName = res.name;
+          try {
+            localStorage.setItem('planit_last_name', res.name);
+          } catch (e) {}
           if (searchInput && document.activeElement !== searchInput) {
             searchInput.placeholder = `📍 ${res.name}`;
           }
@@ -3133,6 +3153,24 @@
 
     // Draw initial azimuth lines for today
     setTimeout(() => updateAzimuthLines(currentLat, currentLng, selectedDate), 400);
+
+    // Auto-detect current GPS location immediately upon opening the app
+    if (navigator.geolocation) {
+      if (locationBtn) locationBtn.classList.add('spinning');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
+          setMapPosition(userLat, userLng, 13);
+        },
+        (err) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
+          console.log('GPS auto-location not available:', err);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
 
     // Init Calendar
     calendarInstance = new AstroCalendar(calendarContainer, {

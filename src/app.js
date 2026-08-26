@@ -50,6 +50,11 @@ class PlanitApp {
     this.updateCoordsDisplay(this.currentLat, this.currentLng);
     this.calendar.notifySelected();
 
+    // Auto-detect location on startup
+    if (navigator.geolocation) {
+      this.handleGeolocation();
+    }
+
     // 3. Event Listeners
     this.initEvents();
   }
