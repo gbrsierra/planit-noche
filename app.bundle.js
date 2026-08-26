@@ -478,8 +478,8 @@
     });
 
     function switchLayer(type) {
+      if (!type || !MAP_LAYERS[type]) return;
       const newLayer = MAP_LAYERS[type];
-      if (!newLayer) return;
 
       if (currentBaseLayer && mapInstance.hasLayer(currentBaseLayer)) {
         mapInstance.removeLayer(currentBaseLayer);
@@ -500,35 +500,41 @@
 
       if (markerInstance) markerInstance.bringToFront();
 
-      const allBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
-      allBtns.forEach(btn => {
-        const btnType = btn.getAttribute('data-map-type');
-        if (btnType === type) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
+      updateActiveLayerBtn(type);
 
       try {
         localStorage.setItem('planit_map_type', type);
       } catch (e) {}
     }
 
-    // Set initial active button and bind click events
+    function updateActiveLayerBtn(activeType) {
+      const allBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
+      allBtns.forEach(btn => {
+        const btnType = btn.getAttribute('data-map-type');
+        const isActive = (btnType === activeType);
+        if (isActive) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+        } else {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-pressed', 'false');
+        }
+      });
+    }
+
+    // Set initial active state
+    updateActiveLayerBtn(currentMapType);
+
+    // Bind click handlers to each layer card
     const allLayerCardBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
     allLayerCardBtns.forEach(btn => {
-      const btnType = btn.getAttribute('data-map-type');
-      if (btnType === currentMapType) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const clickedType = btn.getAttribute('data-map-type') || btnType;
-        switchLayer(clickedType);
+        const clickedType = btn.getAttribute('data-map-type');
+        if (clickedType) {
+          switchLayer(clickedType);
+        }
       });
     });
 
@@ -566,15 +572,12 @@
     setTimeout(() => {
       if (mapInstance) {
         mapInstance.invalidateSize();
-        // Re-sync active button after layout is ready (catches saved preference)
+        // Re-sync active button state after layout is ready
         const syncType = currentMapType;
-        const btns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
-        btns.forEach(btn => {
-          if (btn.getAttribute('data-map-type') === syncType) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
+        document.querySelectorAll('#mapLayersGrid .layer-card-btn').forEach(btn => {
+          const isActive = btn.getAttribute('data-map-type') === syncType;
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         });
       }
     }, 300);
@@ -1012,7 +1015,8 @@
         badge.appendChild(dotsContainer);
         cell.appendChild(badge);
 
-        cell.onclick = () => {
+        cell.onclick = (e) => {
+          if (isSwipeAction) return;
           this.setSelectedDate(new Date(this.viewYear, this.viewMonth, d), true);
         };
 
@@ -1044,6 +1048,52 @@
         </div>
       `;
       card.appendChild(legend);
+
+      // ── Swipe horizontal para cambiar de mes ──────────────────────────
+      let touchStartX = null;
+      let touchStartY = null;
+      let isSwipeAction = false;
+      const SWIPE_MIN_DISTANCE = 40;
+
+      card.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwipeAction = false;
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (touchStartX === null) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+          isSwipeAction = true;
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', (e) => {
+        if (touchStartX === null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        touchStartX = null;
+        touchStartY = null;
+
+        // Solo procesar si el movimiento horizontal supera al vertical
+        if (Math.abs(dx) >= SWIPE_MIN_DISTANCE && Math.abs(dx) > Math.abs(dy) * 1.1) {
+          isSwipeAction = true;
+          if (dx < 0) {
+            // Deslizar hacia la izquierda → Siguiente mes
+            this.nextMonth();
+          } else {
+            // Deslizar hacia la derecha → Mes anterior
+            this.prevMonth();
+          }
+          setTimeout(() => { isSwipeAction = false; }, 150);
+        } else {
+          setTimeout(() => { isSwipeAction = false; }, 60);
+        }
+      }, { passive: true });
+      // ───────────────────────────────────────────────────────────────────
 
       this.container.appendChild(card);
     }

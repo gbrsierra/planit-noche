@@ -208,6 +208,7 @@ export class AstroCalendar {
       cell.appendChild(badge);
 
       cell.onclick = () => {
+        if (isSwipeAction) return;
         this.selectedDate = new Date(this.viewYear, this.viewMonth, d);
         this.render();
         this.notifySelected();
@@ -242,6 +243,49 @@ export class AstroCalendar {
       </div>
     `;
     card.appendChild(legend);
+
+    // ── Swipe horizontal para cambiar de mes ──────────────────────────
+    let touchStartX = null;
+    let touchStartY = null;
+    let isSwipeAction = false;
+    const SWIPE_MIN_DISTANCE = 40;
+
+    card.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isSwipeAction = false;
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+      if (touchStartX === null) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+        isSwipeAction = true;
+      }
+    }, { passive: true });
+
+    card.addEventListener('touchend', (e) => {
+      if (touchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+
+      if (Math.abs(dx) >= SWIPE_MIN_DISTANCE && Math.abs(dx) > Math.abs(dy) * 1.1) {
+        isSwipeAction = true;
+        if (dx < 0) {
+          this.nextMonth();
+        } else {
+          this.prevMonth();
+        }
+        setTimeout(() => { isSwipeAction = false; }, 150);
+      } else {
+        setTimeout(() => { isSwipeAction = false; }, 60);
+      }
+    }, { passive: true });
+    // ───────────────────────────────────────────────────────────────────
 
     this.container.appendChild(card);
   }
