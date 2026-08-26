@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260826_10">
+  <link rel="stylesheet" href="styles.css?v=20260826_11">
 </head>
 <body>
   <div class="app-layout">
@@ -189,15 +189,27 @@
         <!-- Leaflet Map a Pantalla Completa -->
         <div id="map" class="map-view-fullscreen"></div>
 
-        <!-- Botón Flotante para Cambiar Tipo de Mapa -->
-        <div class="map-floating-layer-btn-wrapper">
-          <button id="mapLayerPickerBtn" class="map-layer-fab" title="Cambiar tipo de mapa (Satélite, Relieve, Noche, etc.)">
+        <!-- Controles Flotantes del Mapa (Capas y Mi Ubicación GPS) -->
+        <div class="map-floating-controls-stack">
+          <button id="mapLayerPickerBtn" class="map-control-fab map-layer-fab" title="Cambiar tipo de mapa (Satélite, Relieve, Noche, etc.)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
               <polyline points="2 17 12 22 22 17"></polyline>
               <polyline points="2 12 12 17 22 12"></polyline>
             </svg>
             <span>Capas</span>
+          </button>
+
+          <button id="floatingGpsBtn" class="map-control-fab map-gps-fab" title="Ir a mi ubicación actual (GPS)">
+            <svg class="gps-target-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="7"></circle>
+              <line x1="12" y1="1" x2="12" y2="4"></line>
+              <line x1="12" y1="20" x2="12" y2="23"></line>
+              <line x1="1" y1="12" x2="4" y2="12"></line>
+              <line x1="20" y1="12" x2="23" y2="12"></line>
+              <circle cx="12" cy="12" r="2.5" fill="#f43f5e"></circle>
+            </svg>
+            <span>Mi Posición</span>
           </button>
         </div>
 
@@ -1214,6 +1226,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- App JS Bundle -->
-  <script src="app.bundle.js?v=20260826_10"></script>
+  <script src="app.bundle.js?v=20260826_11"></script>
 </body>
 </html>

@@ -3099,6 +3099,7 @@
     const coordsEl = document.getElementById('coordsText');
     const zoneEl = document.getElementById('zoneText');
     const locationBtn = document.getElementById('myLocationBtn');
+    const floatingGpsBtn = document.getElementById('floatingGpsBtn');
     const searchInput = document.getElementById('locationSearchInput');
     const searchResults = document.getElementById('searchResults');
     const searchBtn = document.getElementById('searchBtn');
@@ -3235,25 +3236,42 @@
       });
     }
 
-    // Geolocation button
+    // Geolocation handlers
+    function triggerGeolocation(btnElement) {
+      if (!navigator.geolocation) {
+        alert('Geolocalización no disponible en tu navegador.');
+        return;
+      }
+      if (btnElement) btnElement.classList.add('spinning');
+      if (locationBtn) locationBtn.classList.add('spinning');
+      if (floatingGpsBtn) floatingGpsBtn.classList.add('spinning');
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
+          if (floatingGpsBtn) floatingGpsBtn.classList.remove('spinning');
+          setMapPosition(pos.coords.latitude, pos.coords.longitude, 14);
+        },
+        (err) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
+          if (floatingGpsBtn) floatingGpsBtn.classList.remove('spinning');
+          alert('No se pudo acceder a tu ubicación. Por favor permite el acceso al GPS en el navegador.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
     if (locationBtn) {
-      locationBtn.addEventListener('click', () => {
-        if (!navigator.geolocation) {
-          alert('Geolocalización no disponible en tu navegador.');
-          return;
-        }
-        locationBtn.classList.add('spinning');
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            locationBtn.classList.remove('spinning');
-            setMapPosition(pos.coords.latitude, pos.coords.longitude, 13);
-          },
-          (err) => {
-            locationBtn.classList.remove('spinning');
-            alert('No se pudo acceder a tu ubicación. Por favor permite el acceso al GPS en el navegador.');
-          },
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
+      locationBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        triggerGeolocation(locationBtn);
+      });
+    }
+
+    if (floatingGpsBtn) {
+      floatingGpsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        triggerGeolocation(floatingGpsBtn);
       });
     }
 
