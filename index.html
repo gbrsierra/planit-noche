@@ -26,12 +26,14 @@
   <div class="app-layout">
 
     <!-- =======================================================
-         GLOBAL TOP NAVIGATION (Acceso directo desde cualquier panel)
+         GLOBAL TOP NAVIGATION (Plan y Menú Desplegable de Calculadoras)
          ======================================================= -->
     <nav class="global-navbar" aria-label="Navegación principal">
-      <div class="nav-tabs-grid">
-        <button class="nav-tab-btn active" data-target="mainView" title="Planificador de Mapa y Calendario">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="nav-bar-container">
+        
+        <!-- Botón Plan (Mapa y Calendario) -->
+        <button class="nav-tab-btn active" data-target="mainView" id="navPlanBtn" title="Planificador de Mapa y Calendario">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
             <line x1="8" y1="2" x2="8" y2="18"></line>
             <line x1="16" y1="6" x2="16" y2="22"></line>
@@ -39,95 +41,180 @@
           <span>Plan</span>
         </button>
 
-        <button class="nav-tab-btn" data-target="exposureView" title="Calculadora de Exposición y Guía EV">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-          </svg>
-          <span>Exposición</span>
-        </button>
+        <!-- Desplegable de Calculadoras -->
+        <div class="dropdown-wrapper" id="calculatorsDropdownWrapper">
+          <button class="nav-dropdown-btn" id="calculatorsDropdownBtn" aria-haspopup="true" aria-expanded="false" title="Abrir Calculadoras de Astrofotografía">
+            <div class="dropdown-btn-content">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                <line x1="8" y1="6" x2="16" y2="6"></line>
+                <line x1="16" y1="14" x2="16" y2="14.01"></line>
+                <line x1="12" y1="14" x2="12" y2="14.01"></line>
+                <line x1="8" y1="14" x2="8" y2="14.01"></line>
+                <line x1="16" y1="18" x2="16" y2="18.01"></line>
+                <line x1="12" y1="18" x2="12" y2="18.01"></line>
+                <line x1="8" y1="18" x2="8" y2="18.01"></line>
+              </svg>
+              <span id="calculatorsDropdownLabel">Calculadoras</span>
+            </div>
+            <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
 
-        <button class="nav-tab-btn" data-target="calcView" title="Calculadora NPF de estrellas puntuales">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-          </svg>
-          <span>NPF</span>
-        </button>
+          <!-- Menú Flotante Desplegable -->
+          <div class="calculators-dropdown-menu" id="calculatorsDropdownMenu" role="menu">
+            <div class="dropdown-menu-header">
+              <span>HERRAMIENTAS Y CALCULADORAS</span>
+            </div>
+            
+            <!-- Opción 1: Exposición y Guía EV -->
+            <button class="dropdown-menu-item" data-target="exposureView" role="menuitem">
+              <div class="item-icon-box item-icon-orange">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+              </div>
+              <div class="item-text-box">
+                <span class="item-title">Exposición & Guía EV</span>
+                <span class="item-desc">Apertura, ISO, tiempo y tabla EV</span>
+              </div>
+              <span class="item-badge badge-orange">EV</span>
+            </button>
 
-        <button class="nav-tab-btn" data-target="hyperfocalView" title="Calculadora de Distancia Hiperfocal">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-          <span>Hiperfocal</span>
-        </button>
+            <!-- Opción 2: Regla NPF -->
+            <button class="dropdown-menu-item" data-target="calcView" role="menuitem">
+              <div class="item-icon-box item-icon-pink">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="item-text-box">
+                <span class="item-title">Regla NPF (Estrellas Puntuales)</span>
+                <span class="item-desc">Tiempo máx. sin trazas según sensor</span>
+              </div>
+              <span class="item-badge badge-pink">NPF</span>
+            </button>
 
-        <button class="nav-tab-btn" data-target="trailsView" title="Calculadora y Simulador de Star Trails">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a9 9 0 1 0 9 9"></path>
-            <path d="M12 7a5 5 0 1 0 5 5"></path>
-            <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
-          </svg>
-          <span>Trails</span>
-        </button>
+            <!-- Opción 3: Hiperfocal -->
+            <button class="dropdown-menu-item" data-target="hyperfocalView" role="menuitem">
+              <div class="item-icon-box item-icon-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+              <div class="item-text-box">
+                <span class="item-title">Distancia Hiperfocal</span>
+                <span class="item-desc">Enfoque y profundidad de campo</span>
+              </div>
+              <span class="item-badge badge-blue">DoF</span>
+            </button>
+
+            <!-- Opción 4: Star Trails -->
+            <button class="dropdown-menu-item" data-target="trailsView" role="menuitem">
+              <div class="item-icon-box item-icon-emerald">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a9 9 0 1 0 9 9"></path>
+                  <path d="M12 7a5 5 0 1 0 5 5"></path>
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+                </svg>
+              </div>
+              <div class="item-text-box">
+                <span class="item-title">Star Trails & Circumpolares</span>
+                <span class="item-desc">Trazos, intervalos, batería y SD</span>
+              </div>
+              <span class="item-badge badge-emerald">Trails</span>
+            </button>
+
+          </div>
+        </div>
+
       </div>
     </nav>
 
     <!-- ==========================================
-         PANTALLA 1: MAPA Y CALENDARIO PRINCIPAL
+         PANTALLA 1: MAPA Y CALENDARIO PRINCIPAL (SNAP FULL-SCREEN)
          ========================================== -->
-    <main id="mainView" class="app-container screen-view active-screen">
+    <main id="mainView" class="app-container screen-view active-screen main-snap-container">
       
-      <!-- Top Action Bar (Ubicación GPS & Buscador) -->
-      <header class="planner-search-header">
-        <div class="search-box-wrapper">
-          <div class="search-input-group">
-            <button id="myLocationBtn" class="gps-inline-btn" title="Usar mi ubicación GPS actual">
-              <svg class="location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-            </button>
-            <input 
-              type="text" 
-              id="locationSearchInput" 
-              class="search-input" 
-              placeholder="Buscar ciudad o lugar (ej. Lleida, Teide...)" 
-              autocomplete="off"
-            />
-            <button id="searchBtn" class="search-action-btn" title="Buscar lugar">
-              Buscar
-            </button>
+      <!-- SECCIÓN 1: MAPA A PANTALLA COMPLETA -->
+      <section id="mapSlide" class="snap-slide map-snap-slide" aria-label="Mapa Astronómico a Pantalla Completa">
+        
+        <!-- Top Action Bar Flotante (Buscador & GPS) -->
+        <header class="planner-search-header floating-header">
+          <div class="search-box-wrapper">
+            <div class="search-input-group">
+              <button id="myLocationBtn" class="gps-inline-btn" title="Usar mi ubicación GPS actual">
+                <svg class="location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </button>
+              <input 
+                type="text" 
+                id="locationSearchInput" 
+                class="search-input" 
+                placeholder="Buscar ciudad o lugar (ej. Lleida, Teide...)" 
+                autocomplete="off"
+              />
+              <button id="searchBtn" class="search-action-btn" title="Buscar lugar">
+                Buscar
+              </button>
+            </div>
+            <div id="searchResults" class="search-results-dropdown hidden"></div>
           </div>
-          <div id="searchResults" class="search-results-dropdown hidden"></div>
-        </div>
-      </header>
+        </header>
 
-      <!-- Map Card Section -->
-      <section class="card-section map-section">
-        <div class="map-card">
-          <div id="map" class="map-view"></div>
-          
-          <div class="map-footer-info">
+        <!-- Leaflet Map a Pantalla Completa -->
+        <div id="map" class="map-view-fullscreen"></div>
+
+        <!-- Barra Flotante Inferior del Mapa -->
+        <div class="map-floating-bottom-bar">
+          <div class="map-info-pill">
             <div class="coords-line">
-              <span class="info-label">Coordenadas:</span>
+              <span class="info-icon">📍</span>
               <span id="coordsText" class="coords-value">41.6148, 0.6268</span>
             </div>
             <div class="zone-line">
-              <span class="info-label">Zona detectada:</span>
               <span id="zoneText" class="zone-value">Europe/Madrid</span>
             </div>
           </div>
+
+          <!-- Botón Flotante para Deslizar al Calendario -->
+          <button id="scrollToCalendarBtn" class="scroll-to-calendar-btn" title="Ver calendario a pantalla completa">
+            <span>Ver Calendario</span>
+            <svg class="bounce-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         </div>
+
       </section>
 
-      <!-- Interactive Calendar Section -->
-      <section id="calendarContainer" class="card-section calendar-section"></section>
+      <!-- SECCIÓN 2: CALENDARIO A PANTALLA COMPLETA -->
+      <section id="calendarSlide" class="snap-slide calendar-snap-slide" aria-label="Calendario Astronómico a Pantalla Completa">
+        
+        <!-- Botón / Barra superior para volver al mapa -->
+        <div class="calendar-top-snap-bar">
+          <button id="scrollToMapBtn" class="scroll-to-map-btn" title="Volver arriba al mapa a pantalla completa">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+            <span>Ver Mapa a Pantalla Completa</span>
+          </button>
+        </div>
 
-      <!-- App Footer -->
-      <footer class="app-footer">
-        <p>Planit Noche &bull; Pulsa en un día para ver el detalle de la noche</p>
-      </footer>
+        <!-- Interactive Calendar Section -->
+        <div id="calendarContainer" class="card-section calendar-section"></div>
+
+        <!-- App Footer -->
+        <footer class="app-footer">
+          <p>Planit Noche &bull; Pulsa en un día para ver el detalle de la noche</p>
+        </footer>
+
+      </section>
 
     </main>
 

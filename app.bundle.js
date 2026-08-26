@@ -2160,21 +2160,97 @@
       trailsView
     };
 
-    // Global Navbar tab buttons
-    const navTabs = document.querySelectorAll('.nav-tab-btn');
+    // Global Navbar & Dropdown Elements
+    const navPlanBtn = document.getElementById('navPlanBtn');
+    const calculatorsDropdownWrapper = document.getElementById('calculatorsDropdownWrapper');
+    const calculatorsDropdownBtn = document.getElementById('calculatorsDropdownBtn');
+    const calculatorsDropdownLabel = document.getElementById('calculatorsDropdownLabel');
+    const calculatorsDropdownMenu = document.getElementById('calculatorsDropdownMenu');
+    const dropdownMenuItems = document.querySelectorAll('.dropdown-menu-item');
+
+    const calculatorNames = {
+      exposureView: 'Exposición',
+      calcView: 'Regla NPF',
+      hyperfocalView: 'Hiperfocal',
+      trailsView: 'Star Trails'
+    };
+
+    function closeCalculatorsDropdown() {
+      if (calculatorsDropdownWrapper) {
+        calculatorsDropdownWrapper.classList.remove('open');
+      }
+      if (calculatorsDropdownBtn) {
+        calculatorsDropdownBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function toggleCalculatorsDropdown(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (!calculatorsDropdownWrapper) return;
+      const isOpen = calculatorsDropdownWrapper.classList.toggle('open');
+      if (calculatorsDropdownBtn) {
+        calculatorsDropdownBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
+    }
+
+    if (calculatorsDropdownBtn) {
+      calculatorsDropdownBtn.addEventListener('click', toggleCalculatorsDropdown);
+    }
+
+    // Close dropdown on outside click or Escape key
+    document.addEventListener('click', (e) => {
+      if (calculatorsDropdownWrapper && !calculatorsDropdownWrapper.contains(e.target)) {
+        closeCalculatorsDropdown();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeCalculatorsDropdown();
+      }
+    });
 
     function updateNavbarActive(targetScreenId) {
-      navTabs.forEach(tab => {
-        const target = tab.getAttribute('data-target');
-        if (target === targetScreenId || (target === 'mainView' && targetScreenId === 'detailsView')) {
-          tab.classList.add('active');
+      const isPlanner = targetScreenId === 'mainView' || targetScreenId === 'detailsView';
+      
+      if (navPlanBtn) {
+        if (isPlanner) {
+          navPlanBtn.classList.add('active');
         } else {
-          tab.classList.remove('active');
+          navPlanBtn.classList.remove('active');
+        }
+      }
+
+      if (calculatorsDropdownBtn) {
+        if (!isPlanner && calculatorNames[targetScreenId]) {
+          calculatorsDropdownBtn.classList.add('active');
+          if (calculatorsDropdownLabel) {
+            calculatorsDropdownLabel.textContent = calculatorNames[targetScreenId];
+          }
+        } else {
+          calculatorsDropdownBtn.classList.remove('active');
+          if (calculatorsDropdownLabel) {
+            calculatorsDropdownLabel.textContent = 'Calculadoras';
+          }
+        }
+      }
+
+      dropdownMenuItems.forEach(item => {
+        const itemTarget = item.getAttribute('data-target');
+        if (itemTarget === targetScreenId) {
+          item.classList.add('active-item');
+        } else {
+          item.classList.remove('active-item');
         }
       });
     }
 
     function switchScreen(activeScreenId) {
+      closeCalculatorsDropdown();
+
       Object.keys(screens).forEach(id => {
         const s = screens[id];
         if (s) {
@@ -2187,27 +2263,69 @@
           }
         }
       });
+
       updateNavbarActive(activeScreenId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (activeScreenId === 'mainView') {
         setTimeout(() => {
           if (mapInstance) mapInstance.invalidateSize();
-        }, 100);
+        }, 150);
       }
     }
 
-    // Connect all navbar tabs
-    navTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const target = tab.getAttribute('data-target');
+    // Connect Plan button
+    if (navPlanBtn) {
+      navPlanBtn.addEventListener('click', () => {
+        switchScreen('mainView');
+      });
+    }
+
+    // Connect Dropdown Menu items
+    dropdownMenuItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const target = item.getAttribute('data-target');
         if (target) {
           switchScreen(target);
         }
       });
     });
 
-    const backToCalendarBtn = document.getElementById('backToCalendarBtn');
+    // Map & Calendar Snap Slide Navigation
+    const scrollToCalendarBtn = document.getElementById('scrollToCalendarBtn');
+    const scrollToMapBtn = document.getElementById('scrollToMapBtn');
+    const mapSlide = document.getElementById('mapSlide');
+    const calendarSlide = document.getElementById('calendarSlide');
+
+    if (scrollToCalendarBtn && calendarSlide) {
+      scrollToCalendarBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        calendarSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    if (scrollToMapBtn && mapSlide) {
+      scrollToMapBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        mapSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 250);
+      });
+    }
+
+    // Auto resize map when scrolling between slides in mainView
+    const mainViewEl = document.getElementById('mainView');
+    if (mainViewEl) {
+      let scrollTimeout = null;
+      mainViewEl.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 150);
+      }, { passive: true });
+    }
     const bottomBackBtn = document.getElementById('bottomBackBtn');
     const detailsLocationBadge = document.getElementById('detailsLocationBadge');
     const prevNightBtn = document.getElementById('prevNightBtn');
@@ -2298,8 +2416,17 @@
     updateCoordsDisplay(currentLat, currentLng);
 
     // Back buttons
-    if (backToCalendarBtn) backToCalendarBtn.addEventListener('click', () => switchScreen('mainView'));
-    if (bottomBackBtn) bottomBackBtn.addEventListener('click', () => switchScreen('mainView'));
+    function returnToCalendarView() {
+      switchScreen('mainView');
+      setTimeout(() => {
+        if (calendarSlide) {
+          calendarSlide.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      }, 50);
+    }
+
+    if (backToCalendarBtn) backToCalendarBtn.addEventListener('click', returnToCalendarView);
+    if (bottomBackBtn) bottomBackBtn.addEventListener('click', returnToCalendarView);
 
     // Date Switchers
     if (prevNightBtn) {
