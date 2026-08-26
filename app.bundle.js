@@ -355,6 +355,12 @@
     popupAnchor: [0, -50]
   }) : null;
 
+  let currentMapType = 'streets';
+  let currentBaseLayer = null;
+  let labelsOverlayLayer = null;
+  let isAzimuthVisible = true;
+  let isLabelsVisible = true;
+
   function initMap(containerId, initialLat, initialLng, onLocationChange) {
     locationChangeHandler = onLocationChange;
 
@@ -370,31 +376,50 @@
       attributionControl: true
     });
 
-    const voyagerLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-    });
-
-    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-    });
-
-    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxZoom: 19
-    });
-
-    voyagerLayer.addTo(mapInstance);
-
-    const baseLayers = {
-      'Mapa Detallado': voyagerLayer,
-      'Satélite': satLayer,
-      'Modo Noche': darkLayer
+    const MAP_LAYERS = {
+      satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      }),
+      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map: &copy; OpenStreetMap, SRTM | Style: &copy; OpenTopoMap',
+        subdomains: 'abc',
+        maxZoom: 17
+      }),
+      dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }),
+      streets: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }),
+      nightlights: L.tileLayer('https://map1.vis.earthdata.nasa.gov/wmts-webmerc/VIIRS_CityLights_2012/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg', {
+        attribution: 'Imagery &copy; NASA Earth Observatory',
+        maxZoom: 14,
+        maxNativeZoom: 8
+      })
     };
-    L.control.layers(baseLayers, null, { position: 'topright' }).addTo(mapInstance);
+
+    labelsOverlayLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Labels &copy; Esri',
+      maxZoom: 19
+    });
+
+    // Read stored map type preference
+    try {
+      const saved = localStorage.getItem('planit_map_type');
+      if (saved && MAP_LAYERS[saved]) currentMapType = saved;
+    } catch (e) {}
+
+    currentBaseLayer = MAP_LAYERS[currentMapType] || MAP_LAYERS.streets;
+    currentBaseLayer.addTo(mapInstance);
+
+    if (isLabelsVisible) {
+      labelsOverlayLayer.addTo(mapInstance);
+    }
 
     markerInstance = L.marker([initialLat, initialLng], {
       icon: redPinIcon,
@@ -410,6 +435,116 @@
       markerInstance.setLatLng(e.latlng);
       if (locationChangeHandler) locationChangeHandler(e.latlng.lat, e.latlng.lng);
     });
+
+    // Wire Layer Picker Modal & Controls
+    const mapLayerPickerBtn = document.getElementById('mapLayerPickerBtn');
+    const mapLayersModal = document.getElementById('mapLayersModal');
+    const closeLayersModalBtn = document.getElementById('closeLayersModalBtn');
+    const layerCardBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
+    const toggleAzimuthCheckbox = document.getElementById('toggleAzimuthLines');
+    const toggleLabelsCheckbox = document.getElementById('toggleLabelsOverlay');
+
+    function closeMapLayersModal() {
+      if (mapLayersModal) mapLayersModal.classList.add('hidden');
+      if (mapLayerPickerBtn) mapLayerPickerBtn.classList.remove('active');
+    }
+
+    function toggleMapLayersModal(e) {
+      if (e) e.stopPropagation();
+      if (!mapLayersModal) return;
+      const isHidden = mapLayersModal.classList.toggle('hidden');
+      if (mapLayerPickerBtn) {
+        mapLayerPickerBtn.classList.toggle('active', !isHidden);
+      }
+    }
+
+    if (mapLayerPickerBtn) {
+      mapLayerPickerBtn.addEventListener('click', toggleMapLayersModal);
+    }
+
+    if (closeLayersModalBtn) {
+      closeLayersModalBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMapLayersModal();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (mapLayersModal && !mapLayersModal.contains(e.target) && mapLayerPickerBtn && !mapLayerPickerBtn.contains(e.target)) {
+        closeMapLayersModal();
+      }
+    });
+
+    function switchLayer(type) {
+      const newLayer = MAP_LAYERS[type];
+      if (!newLayer) return;
+
+      if (currentBaseLayer && mapInstance.hasLayer(currentBaseLayer)) {
+        mapInstance.removeLayer(currentBaseLayer);
+      }
+
+      newLayer.addTo(mapInstance);
+      currentBaseLayer = newLayer;
+      currentMapType = type;
+
+      if (isLabelsVisible && labelsOverlayLayer) {
+        if (!mapInstance.hasLayer(labelsOverlayLayer)) {
+          labelsOverlayLayer.addTo(mapInstance);
+        }
+        labelsOverlayLayer.bringToFront();
+      }
+
+      if (markerInstance) markerInstance.bringToFront();
+
+      layerCardBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-map-type') === type);
+      });
+
+      try {
+        localStorage.setItem('planit_map_type', type);
+      } catch (e) {}
+    }
+
+    // Set initial active button
+    layerCardBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-map-type') === currentMapType);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = btn.getAttribute('data-map-type');
+        switchLayer(type);
+      });
+    });
+
+    // Azimuth toggle
+    if (toggleAzimuthCheckbox) {
+      toggleAzimuthCheckbox.checked = isAzimuthVisible;
+      toggleAzimuthCheckbox.addEventListener('change', (e) => {
+        isAzimuthVisible = e.target.checked;
+        if (azimuthLinesLayer) {
+          if (isAzimuthVisible) {
+            azimuthLinesLayer.addTo(mapInstance);
+          } else {
+            mapInstance.removeLayer(azimuthLinesLayer);
+          }
+        }
+      });
+    }
+
+    // Labels overlay toggle
+    if (toggleLabelsCheckbox) {
+      toggleLabelsCheckbox.checked = isLabelsVisible;
+      toggleLabelsCheckbox.addEventListener('change', (e) => {
+        isLabelsVisible = e.target.checked;
+        if (labelsOverlayLayer) {
+          if (isLabelsVisible) {
+            labelsOverlayLayer.addTo(mapInstance);
+            labelsOverlayLayer.bringToFront();
+          } else {
+            mapInstance.removeLayer(labelsOverlayLayer);
+          }
+        }
+      });
+    }
 
     setTimeout(() => {
       if (mapInstance) mapInstance.invalidateSize();
@@ -455,7 +590,18 @@
     if (azimuthLinesLayer) {
       azimuthLinesLayer.clearLayers();
     } else {
-      azimuthLinesLayer = L.layerGroup().addTo(mapInstance);
+      azimuthLinesLayer = L.layerGroup();
+    }
+
+    if (!isAzimuthVisible) {
+      if (mapInstance.hasLayer(azimuthLinesLayer)) {
+        mapInstance.removeLayer(azimuthLinesLayer);
+      }
+      return;
+    }
+
+    if (!mapInstance.hasLayer(azimuthLinesLayer)) {
+      azimuthLinesLayer.addTo(mapInstance);
     }
 
     // Helper: convert azimuth (0=N, clockwise degrees) + distance km → LatLng endpoint

@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260826">
+  <link rel="stylesheet" href="styles.css?v=20260826_3">
 </head>
 <body>
   <div class="app-layout">
@@ -188,6 +188,108 @@
 
         <!-- Leaflet Map a Pantalla Completa -->
         <div id="map" class="map-view-fullscreen"></div>
+
+        <!-- Botón Flotante para Cambiar Tipo de Mapa -->
+        <div class="map-floating-layer-btn-wrapper">
+          <button id="mapLayerPickerBtn" class="map-layer-fab" title="Cambiar tipo de mapa (Satélite, Relieve, Noche, etc.)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <span>Capas</span>
+          </button>
+        </div>
+
+        <!-- Modal / Drawer Selector de Capas del Mapa -->
+        <div id="mapLayersModal" class="map-layers-modal hidden">
+          <div class="layers-modal-header">
+            <div class="modal-title-box">
+              <span class="modal-icon">🗺️</span>
+              <h3>Estilo de Mapa</h3>
+            </div>
+            <button id="closeLayersModalBtn" class="modal-close-btn" aria-label="Cerrar">&times;</button>
+          </div>
+
+          <div class="layers-grid" id="mapLayersGrid">
+            <!-- Opción 1: Satélite Híbrido -->
+            <button class="layer-card-btn" data-map-type="satellite">
+              <div class="layer-thumb thumb-sat">🛰️</div>
+              <div class="layer-text">
+                <strong>Satélite Híbrido</strong>
+                <small>Imágenes reales + Nombres</small>
+              </div>
+              <span class="layer-check">✓</span>
+            </button>
+
+            <!-- Opción 2: Topográfico y Relieve -->
+            <button class="layer-card-btn" data-map-type="topo">
+              <div class="layer-thumb thumb-topo">⛰️</div>
+              <div class="layer-text">
+                <strong>Topográfico &amp; Relieve</strong>
+                <small>Curvas de nivel y montañas</small>
+              </div>
+              <span class="layer-check">✓</span>
+            </button>
+
+            <!-- Opción 3: Modo Noche (Astro) -->
+            <button class="layer-card-btn" data-map-type="dark">
+              <div class="layer-thumb thumb-dark">🌌</div>
+              <div class="layer-text">
+                <strong>Modo Noche (Astro)</strong>
+                <small>Oscuro para visión nocturna</small>
+              </div>
+              <span class="layer-check">✓</span>
+            </button>
+
+            <!-- Opción 4: Mapa Callejero -->
+            <button class="layer-card-btn active" data-map-type="streets">
+              <div class="layer-thumb thumb-streets">🗺️</div>
+              <div class="layer-text">
+                <strong>Mapa Callejero</strong>
+                <small>Carreteras, pistas y núcleos</small>
+              </div>
+              <span class="layer-check">✓</span>
+            </button>
+
+            <!-- Opción 5: Luces Nocturnas / Polución -->
+            <button class="layer-card-btn" data-map-type="nightlights">
+              <div class="layer-thumb thumb-pollution">💡</div>
+              <div class="layer-text">
+                <strong>Luces Nocturnas</strong>
+                <small>Contaminación lumínica (NASA)</small>
+              </div>
+              <span class="layer-check">✓</span>
+            </button>
+          </div>
+
+          <!-- Opciones de capas superpuestas (Overlays) -->
+          <div class="layers-overlays-section">
+            <span class="overlays-section-title">SUPERPOSICIONES EN VIVO</span>
+            
+            <div class="overlay-toggle-row">
+              <div class="overlay-info">
+                <span class="overlay-label">🧭 Líneas de Acimut Celestial</span>
+                <small>Trayectorias de Sol, Luna y Vía Láctea</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggleAzimuthLines" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="overlay-toggle-row">
+              <div class="overlay-info">
+                <span class="overlay-label">🏷️ Nombres y Carreteras</span>
+                <small>Etiquetas de lugares sobre satélite/relieve</small>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggleLabelsOverlay" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
 
         <!-- Barra Flotante Inferior del Mapa -->
         <div class="map-floating-bottom-bar">
@@ -1112,6 +1214,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- App JS Bundle -->
-  <script src="app.bundle.js?v=20260826_2"></script>
+  <script src="app.bundle.js?v=20260826_3"></script>
 </body>
 </html>
