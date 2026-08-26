@@ -355,7 +355,7 @@
     popupAnchor: [0, -50]
   }) : null;
 
-  let currentMapType = 'streets';
+  let currentMapType = 'satellite';
   let currentBaseLayer = null;
   let labelsOverlayLayer = null;
   let isAzimuthVisible = true;
@@ -409,16 +409,22 @@
       pane: 'overlayPane'
     });
 
-    // Read stored map type preference
+    // Read stored map type preference (defaults to satellite)
     try {
       const saved = localStorage.getItem('planit_map_type');
-      if (saved && MAP_LAYERS[saved]) currentMapType = saved;
-    } catch (e) {}
+      if (saved && MAP_LAYERS[saved]) {
+        currentMapType = saved;
+      } else {
+        currentMapType = 'satellite';
+      }
+    } catch (e) {
+      currentMapType = 'satellite';
+    }
 
-    currentBaseLayer = MAP_LAYERS[currentMapType] || MAP_LAYERS.streets;
+    currentBaseLayer = MAP_LAYERS[currentMapType] || MAP_LAYERS.satellite;
     currentBaseLayer.addTo(mapInstance);
 
-    // Only attach labels overlay on Satellite by default
+    // Attach labels overlay on Satellite by default
     if (isLabelsVisible && currentMapType === 'satellite') {
       labelsOverlayLayer.addTo(mapInstance);
     }
