@@ -564,8 +564,20 @@
     }
 
     setTimeout(() => {
-      if (mapInstance) mapInstance.invalidateSize();
-    }, 250);
+      if (mapInstance) {
+        mapInstance.invalidateSize();
+        // Re-sync active button after layout is ready (catches saved preference)
+        const syncType = currentMapType;
+        const btns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
+        btns.forEach(btn => {
+          if (btn.getAttribute('data-map-type') === syncType) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+    }, 300);
 
     return mapInstance;
   }
@@ -577,12 +589,15 @@
     if (isNaN(numericLat) || isNaN(numericLng)) return;
 
     const latlng = L.latLng(numericLat, numericLng);
+
+    // Set marker first so it appears at exact coords instantly
     markerInstance.setLatLng(latlng);
 
+    // Use setView for immediate precise positioning; panTo/flyTo can misplace on mobile
     if (zoom) {
-      mapInstance.flyTo(latlng, zoom, { duration: 1.0 });
+      mapInstance.setView(latlng, zoom, { animate: true, duration: 0.6 });
     } else {
-      mapInstance.panTo(latlng);
+      mapInstance.setView(latlng, mapInstance.getZoom(), { animate: true, duration: 0.6 });
     }
 
     if (locationChangeHandler) {
