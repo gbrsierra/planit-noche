@@ -378,13 +378,12 @@
 
     const MAP_LAYERS = {
       satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
+        attribution: 'Tiles &copy; Esri World Imagery',
         maxZoom: 19
       }),
-      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map: &copy; OpenStreetMap, SRTM | Style: &copy; OpenTopoMap',
-        subdomains: 'abc',
-        maxZoom: 17
+      topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri World Topo Map',
+        maxZoom: 19
       }),
       dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -403,9 +402,11 @@
       })
     };
 
-    labelsOverlayLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Labels &copy; Esri',
-      maxZoom: 19
+    labelsOverlayLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19,
+      pane: 'overlayPane'
     });
 
     // Read stored map type preference
@@ -417,7 +418,8 @@
     currentBaseLayer = MAP_LAYERS[currentMapType] || MAP_LAYERS.streets;
     currentBaseLayer.addTo(mapInstance);
 
-    if (isLabelsVisible) {
+    // Only attach labels overlay on Satellite by default
+    if (isLabelsVisible && currentMapType === 'satellite') {
       labelsOverlayLayer.addTo(mapInstance);
     }
 
@@ -487,11 +489,13 @@
       currentBaseLayer = newLayer;
       currentMapType = type;
 
-      if (isLabelsVisible && labelsOverlayLayer) {
+      if (isLabelsVisible && (type === 'satellite' || type === 'nightlights') && labelsOverlayLayer) {
         if (!mapInstance.hasLayer(labelsOverlayLayer)) {
           labelsOverlayLayer.addTo(mapInstance);
         }
         labelsOverlayLayer.bringToFront();
+      } else if (labelsOverlayLayer && mapInstance.hasLayer(labelsOverlayLayer)) {
+        mapInstance.removeLayer(labelsOverlayLayer);
       }
 
       if (markerInstance) markerInstance.bringToFront();
@@ -723,34 +727,81 @@
 
 
   async function reverseGeocode(lat, lng) {
+    // 1. Try Photon reverse geocoding
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10`);
-      if (!res.ok) throw new Error('Geocode failed');
-      const data = await res.json();
-      let name = 'Ubicación seleccionada';
-      if (data.address) {
-        name = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || data.address.state || data.display_name.split(',')[0];
+      const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=es`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.features && data.features.length > 0) {
+          const p = data.features[0].properties;
+          const name = p.name || p.city || p.town || p.district || p.state || 'Ubicación seleccionada';
+          const parts = [p.name, p.city || p.town || p.district, p.state, p.country].filter(Boolean);
+          return { name, displayName: parts.join(', ') };
+        }
       }
-      return { name, displayName: data.display_name };
     } catch (e) {
-      return { name: 'Ubicación seleccionada', displayName: '' };
+      // Fallback
     }
+
+    // 2. Fallback to Nominatim
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10&accept-language=es`);
+      if (res.ok) {
+        const data = await res.json();
+        let name = 'Ubicación seleccionada';
+        if (data.address) {
+          name = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || data.address.state || data.display_name.split(',')[0];
+        }
+        return { name, displayName: data.display_name };
+      }
+    } catch (e) {
+      // Fall through
+    }
+
+    return { name: 'Ubicación seleccionada', displayName: '' };
   }
 
   async function searchLocations(query) {
     if (!query || query.trim().length < 2) return [];
+    const q = encodeURIComponent(query.trim());
+
+    // 1. Try Photon (fast, free, no API key required, mobile-friendly)
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=6`);
-      if (!res.ok) throw new Error('Search failed');
-      const data = await res.json();
-      return data.map(item => ({
-        name: item.display_name,
-        lat: parseFloat(item.lat),
-        lng: parseFloat(item.lon)
-      }));
+      const res = await fetch(`https://photon.komoot.io/api/?q=${q}&limit=6&lang=es`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.features && data.features.length > 0) {
+          return data.features.map(f => {
+            const p = f.properties;
+            const parts = [p.name, p.city || p.town || p.district, p.state, p.country].filter(Boolean);
+            return {
+              name: parts.join(', ') || p.name || 'Lugar encontrado',
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0]
+            };
+          });
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    // 2. Fallback to Nominatim
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${q}&limit=6&accept-language=es`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.map(item => ({
+          name: item.display_name,
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon)
+        }));
+      }
     } catch (e) {
       return [];
     }
+
+    return [];
   }
 
   // =========================================================================
