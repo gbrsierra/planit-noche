@@ -989,114 +989,224 @@
       return padLeft + (idx / (samples.length - 1)) * plotW;
     }
 
-    ctx.clearRect(0, 0, W, H);
+    function renderBaseChart() {
+      ctx.clearRect(0, 0, W, H);
 
-    samples.forEach((s, i) => {
-      const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
-      const isGcDark = isDark && (s.gcAlt > 0);
+      // Dark band backgrounds
+      samples.forEach((s, i) => {
+        const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
+        const isGcDark = isDark && (s.gcAlt > 0);
 
-      if (isDark) {
-        const x1 = getX(i);
-        const x2 = getX(Math.min(samples.length - 1, i + 1));
-        ctx.fillStyle = isGcDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.14)';
-        ctx.fillRect(x1, padTop, x2 - x1 + 1, plotH);
+        if (isDark) {
+          const x1 = getX(i);
+          const x2 = getX(Math.min(samples.length - 1, i + 1));
+          ctx.fillStyle = isGcDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.14)';
+          ctx.fillRect(x1, padTop, x2 - x1 + 1, plotH);
+        }
+      });
+
+      // Horizontal reference lines (0° horizon & -18° astronomical twilight)
+      ctx.lineWidth = 1;
+      const yHorizon = getY(0);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padLeft, yHorizon);
+      ctx.lineTo(W - padRight, yHorizon);
+      ctx.stroke();
+
+      const yTwilight = getY(-18);
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(padLeft, yTwilight);
+      ctx.lineTo(W - padRight, yTwilight);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Axis labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('0°', padLeft - 4, yHorizon);
+      ctx.fillText('-18°', padLeft - 4, yTwilight);
+      ctx.fillText('30°', padLeft - 4, getY(30));
+      ctx.fillText('60°', padLeft - 4, getY(60));
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const hourStep = Math.max(1, Math.floor(samples.length / 8));
+      for (let i = 0; i < samples.length; i += hourStep) {
+        const s = samples[i];
+        const x = getX(i);
+        ctx.fillText(`${String(s.time.getHours()).padStart(2, '0')}:00`, x, H - padBottom + 6);
       }
-    });
 
-    ctx.lineWidth = 1;
-    const yHorizon = getY(0);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padLeft, yHorizon);
-    ctx.lineTo(W - padRight, yHorizon);
-    ctx.stroke();
+      // Sun curve
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#F59E0B';
+      ctx.beginPath();
+      samples.forEach((s, i) => {
+        const x = getX(i);
+        const y = getY(s.sunAlt);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
 
-    const yTwilight = getY(-18);
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-    ctx.beginPath();
-    ctx.moveTo(padLeft, yTwilight);
-    ctx.lineTo(W - padRight, yTwilight);
-    ctx.stroke();
-    ctx.setLineDash([]);
+      // Moon curve
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#38BDF8';
+      ctx.beginPath();
+      samples.forEach((s, i) => {
+        const x = getX(i);
+        const y = getY(s.moonAlt);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('0°', padLeft - 4, yHorizon);
-    ctx.fillText('-18°', padLeft - 4, yTwilight);
-    ctx.fillText('30°', padLeft - 4, getY(30));
-    ctx.fillText('60°', padLeft - 4, getY(60));
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    const hourStep = Math.floor(samples.length / 8);
-    for (let i = 0; i < samples.length; i += hourStep) {
-      const s = samples[i];
-      const x = getX(i);
-      ctx.fillText(`${String(s.time.getHours()).padStart(2, '0')}:00`, x, H - padBottom + 6);
+      // Galactic Center curve
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#10B981';
+      ctx.beginPath();
+      samples.forEach((s, i) => {
+        const x = getX(i);
+        const y = getY(s.gcAlt);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
     }
 
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#F59E0B';
-    ctx.beginPath();
-    samples.forEach((s, i) => {
-      const x = getX(i);
-      const y = getY(s.sunAlt);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    renderBaseChart();
 
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#38BDF8';
-    ctx.beginPath();
-    samples.forEach((s, i) => {
-      const x = getX(i);
-      const y = getY(s.moonAlt);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    function drawScrubber(sampleIdx) {
+      renderBaseChart();
+      if (sampleIdx === null || sampleIdx === undefined) return;
+      const s = samples[sampleIdx];
+      if (!s) return;
 
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#10B981';
-    ctx.beginPath();
-    samples.forEach((s, i) => {
-      const x = getX(i);
-      const y = getY(s.gcAlt);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+      const x = getX(sampleIdx);
 
-    canvas.onmousemove = (e) => {
-      const mouseX = e.offsetX;
-      if (mouseX < padLeft || mouseX > W - padRight) {
-        if (tooltip) tooltip.classList.add('hidden');
+      // Draw vertical cursor line
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, padTop);
+      ctx.lineTo(x, H - padBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw indicator points on curves
+      function drawDot(y, color, glowColor) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+      }
+
+      drawDot(getY(s.sunAlt), '#F59E0B', 'rgba(245, 158, 11, 0.8)');
+      drawDot(getY(s.moonAlt), '#38BDF8', 'rgba(56, 189, 248, 0.8)');
+      drawDot(getY(s.gcAlt), '#10B981', 'rgba(16, 185, 129, 0.8)');
+      ctx.restore();
+    }
+
+    function updateTooltipAt(clientX) {
+      const cRect = canvas.getBoundingClientRect();
+      const posX = clientX - cRect.left;
+      if (posX < padLeft || posX > W - padRight) {
+        hideScrubber();
         return;
       }
-      const ratio = (mouseX - padLeft) / plotW;
+
+      const ratio = Math.max(0, Math.min(1, (posX - padLeft) / plotW));
       const sampleIdx = Math.round(ratio * (samples.length - 1));
       const s = samples[sampleIdx];
       if (!s || !tooltip) return;
 
-      tooltip.classList.remove('hidden');
-      tooltip.style.left = `${Math.min(W - 150, Math.max(10, mouseX - 60))}px`;
-      tooltip.style.top = `10px`;
+      drawScrubber(sampleIdx);
+
+      // Determine darkness status badge
+      const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
+      let badgeClass = 'state-twilight';
+      let badgeText = 'Crepúsculo';
+
+      if (s.sunAlt > -0.833) {
+        badgeClass = 'state-twilight';
+        badgeText = 'Día';
+      } else if (isDark && s.gcAlt > 0) {
+        badgeClass = 'state-gc';
+        badgeText = '🌌 Vía Láctea';
+      } else if (isDark) {
+        badgeClass = 'state-dark';
+        badgeText = '🌑 Oscuridad';
+      } else if (s.moonAlt > 0) {
+        badgeClass = 'state-moon';
+        badgeText = '🌗 Luna';
+      }
+
       const timeStr = `${String(s.time.getHours()).padStart(2, '0')}:${String(s.time.getMinutes()).padStart(2, '0')}`;
       tooltip.innerHTML = `
-        <div class="tooltip-time">${timeStr}</div>
-        <div class="tooltip-row"><span class="dot-sun"></span> Sol: <strong>${s.sunAlt.toFixed(1)}°</strong></div>
-        <div class="tooltip-row"><span class="dot-moon"></span> Luna: <strong>${s.moonAlt.toFixed(1)}°</strong></div>
-        <div class="tooltip-row"><span class="dot-gc"></span> Vía Láctea: <strong>${s.gcAlt.toFixed(1)}°</strong></div>
+        <div class="tooltip-time-header">
+          <span class="tooltip-time">${timeStr}</span>
+          <span class="tooltip-state-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="tooltip-row">
+          <span class="tooltip-row-label"><span class="dot-sun"></span> Sol</span>
+          <span class="tooltip-row-val">${s.sunAlt >= 0 ? '+' : ''}${s.sunAlt.toFixed(1)}°</span>
+        </div>
+        <div class="tooltip-row">
+          <span class="tooltip-row-label"><span class="dot-moon"></span> Luna</span>
+          <span class="tooltip-row-val">${s.moonAlt >= 0 ? '+' : ''}${s.moonAlt.toFixed(1)}°</span>
+        </div>
+        <div class="tooltip-row">
+          <span class="tooltip-row-label"><span class="dot-gc"></span> Vía Láctea</span>
+          <span class="tooltip-row-val">${s.gcAlt >= 0 ? '+' : ''}${s.gcAlt.toFixed(1)}°</span>
+        </div>
       `;
-    };
 
-    canvas.onmouseleave = () => {
+      tooltip.classList.remove('hidden');
+
+      // Fluid positioning: keep within canvas bounds
+      const tooltipW = tooltip.offsetWidth || 150;
+      let leftPos = posX - tooltipW / 2;
+      if (leftPos < 8) leftPos = 8;
+      if (leftPos + tooltipW > W - 8) leftPos = W - tooltipW - 8;
+
+      tooltip.style.left = `${leftPos}px`;
+      tooltip.style.top = '10px';
+    }
+
+    function hideScrubber() {
+      renderBaseChart();
       if (tooltip) tooltip.classList.add('hidden');
-    };
+    }
+
+    function onPointerMove(e) {
+      if (e.cancelable) e.preventDefault();
+      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+      updateTooltipAt(clientX);
+    }
+
+    canvas.onpointerdown = onPointerMove;
+    canvas.onpointermove = onPointerMove;
+    canvas.onpointerup = hideScrubber;
+    canvas.onpointercancel = hideScrubber;
+    canvas.onmouseleave = hideScrubber;
+
+    canvas.ontouchstart = onPointerMove;
+    canvas.ontouchmove = onPointerMove;
+    canvas.ontouchend = hideScrubber;
+    canvas.ontouchcancel = hideScrubber;
   }
 
   // =========================================================================
@@ -2134,7 +2244,364 @@
   }
 
   // =========================================================================
-  // 9. MULTI-SCREEN CONTROLLER & MAIN APP
+  // 9. TIMELAPSE CALCULATOR ENGINE
+  // =========================================================================
+  function initTimelapseCalculator() {
+    const presetsContainer = document.getElementById('tlPresetsContainer');
+    const modeBtns = document.querySelectorAll('.tl-mode-btn');
+
+    const heroTag = document.getElementById('tlHeroTag');
+    const fpsBadge = document.getElementById('tlFpsBadge');
+    const mainResultVal = document.getElementById('tlMainResultVal');
+    const mainResultSub = document.getElementById('tlMainResultSub');
+    const barFill = document.getElementById('tlResultBarFill');
+    const smartAlert = document.getElementById('tlSmartAlert');
+    const smartAlertText = document.getElementById('tlSmartAlertText');
+
+    // Controls
+    const groupInterval = document.getElementById('tlGroupInterval');
+    const groupShooting = document.getElementById('tlGroupShooting');
+    const groupDesiredVideo = document.getElementById('tlGroupDesiredVideo');
+
+    const intervalSlider = document.getElementById('tlIntervalSlider');
+    const intervalDisplay = document.getElementById('tlIntervalDisplay');
+    const intervalMinusBtn = document.getElementById('tlIntervalMinusBtn');
+    const intervalPlusBtn = document.getElementById('tlIntervalPlusBtn');
+    const intervalChips = document.querySelectorAll('#tlIntervalChips .tl-chip');
+
+    const shootingSlider = document.getElementById('tlShootingSlider');
+    const shootingDisplay = document.getElementById('tlShootingDisplay');
+    const shootingMinusBtn = document.getElementById('tlShootingMinusBtn');
+    const shootingPlusBtn = document.getElementById('tlShootingPlusBtn');
+    const shootingChips = document.querySelectorAll('#tlShootingChips .tl-chip');
+
+    const desiredVideoSlider = document.getElementById('tlDesiredVideoSlider');
+    const desiredVideoDisplay = document.getElementById('tlDesiredVideoDisplay');
+    const desiredVideoMinusBtn = document.getElementById('tlDesiredVideoMinusBtn');
+    const desiredVideoPlusBtn = document.getElementById('tlDesiredVideoPlusBtn');
+    const desiredVideoChips = document.querySelectorAll('#tlDesiredVideoChips .tl-chip');
+
+    const fpsSelect = document.getElementById('tlFpsSelect');
+    const formatSelect = document.getElementById('tlFormatSelect');
+    const expTimeSelect = document.getElementById('tlExpTimeSelect');
+
+    // Metric outputs
+    const metricPhotos = document.getElementById('tlMetricPhotos');
+    const metricSpeed = document.getElementById('tlMetricSpeed');
+    const metricStorage = document.getElementById('tlMetricStorage');
+    const metricBattery = document.getElementById('tlMetricBattery');
+    const metricEndTime = document.getElementById('tlMetricEndTime');
+
+    if (!mainResultVal) return;
+
+    // Presets
+    const PRESETS = {
+      milkyway: { interval: 25, shooting: 150, exp: 20, fps: 24 },
+      startrails: { interval: 30, shooting: 240, exp: 25, fps: 30 },
+      holygrail: { interval: 5, shooting: 90, exp: 0.001, fps: 24 },
+      'clouds-fast': { interval: 2, shooting: 30, exp: 0.001, fps: 30 },
+      'clouds-slow': { interval: 8, shooting: 120, exp: 0.001, fps: 24 },
+      city: { interval: 2, shooting: 45, exp: 1, fps: 24 },
+      moon: { interval: 10, shooting: 180, exp: 0.001, fps: 30 }
+    };
+
+    // State
+    let currentMode = 'video'; // 'video' | 'shooting' | 'interval'
+    let intervalSec = 25;
+    let shootingMin = 150;
+    let desiredVideoSec = 15;
+    let fps = 24;
+    let photoMb = 25;
+    let expSec = 20;
+
+    function formatTimeMin(min) {
+      const h = Math.floor(min / 60);
+      const m = Math.round(min % 60);
+      if (h === 0) return `${m} min`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}m (${min} min)`;
+    }
+
+    function formatVideoDuration(sec) {
+      const mins = Math.floor(sec / 60);
+      const remSec = Math.floor(sec % 60);
+      return `${String(mins).padStart(2, '0')}:${String(remSec).padStart(2, '0')}`;
+    }
+
+    function updateCalculations() {
+      let totalPhotos = 0;
+      let finalVideoSec = 0;
+      let finalShootingMin = shootingMin;
+      let finalIntervalSec = intervalSec;
+
+      if (currentMode === 'video') {
+        finalIntervalSec = Math.max(1, intervalSec);
+        totalPhotos = Math.max(1, Math.floor((shootingMin * 60) / finalIntervalSec));
+        finalVideoSec = totalPhotos / fps;
+      } else if (currentMode === 'shooting') {
+        finalIntervalSec = Math.max(1, intervalSec);
+        totalPhotos = Math.max(1, Math.round(desiredVideoSec * fps));
+        finalShootingMin = Math.round((totalPhotos * finalIntervalSec) / 60);
+        finalVideoSec = desiredVideoSec;
+      } else if (currentMode === 'interval') {
+        totalPhotos = Math.max(1, Math.round(desiredVideoSec * fps));
+        finalIntervalSec = Math.max(0.5, (shootingMin * 60) / totalPhotos);
+        finalVideoSec = desiredVideoSec;
+      }
+
+      // Update hero card display
+      if (fpsBadge) fpsBadge.textContent = `@ ${fps} FPS`;
+
+      if (currentMode === 'video') {
+        heroTag.textContent = '🎬 DURACIÓN DEL VÍDEO FINAL';
+        mainResultVal.textContent = formatVideoDuration(finalVideoSec);
+        mainResultSub.textContent = `${finalVideoSec.toFixed(1)} segundos de metraje`;
+        const barPct = Math.min(100, Math.max(8, (finalVideoSec / 60) * 100));
+        barFill.style.width = `${barPct}%`;
+      } else if (currentMode === 'shooting') {
+        heroTag.textContent = '⏱️ TIEMPO DE DISPARO NECESARIO';
+        mainResultVal.textContent = formatTimeMin(finalShootingMin);
+        mainResultSub.textContent = `Para obtener ${desiredVideoSec}s de vídeo`;
+        const barPct = Math.min(100, Math.max(8, (finalShootingMin / 360) * 100));
+        barFill.style.width = `${barPct}%`;
+      } else if (currentMode === 'interval') {
+        heroTag.textContent = '📐 INTERVALO IDEAL RECOMENDADO';
+        mainResultVal.textContent = `${finalIntervalSec.toFixed(1)} s`;
+        mainResultSub.textContent = `Entre cada disparo consecutivo`;
+        const barPct = Math.min(100, Math.max(8, (finalIntervalSec / 60) * 100));
+        barFill.style.width = `${barPct}%`;
+      }
+
+      // Update input displays
+      if (intervalDisplay) intervalDisplay.textContent = `${intervalSec} s`;
+      if (intervalSlider) intervalSlider.value = intervalSec;
+      if (shootingDisplay) shootingDisplay.textContent = formatTimeMin(shootingMin);
+      if (shootingSlider) shootingSlider.value = shootingMin;
+      if (desiredVideoDisplay) desiredVideoDisplay.textContent = `${desiredVideoSec} s (${formatVideoDuration(desiredVideoSec)})`;
+      if (desiredVideoSlider) desiredVideoSlider.value = desiredVideoSec;
+
+      // Update metrics
+      if (metricPhotos) {
+        metricPhotos.innerHTML = `${totalPhotos} <small>disparos</small>`;
+      }
+
+      const totalShootingSec = (currentMode === 'shooting' ? finalShootingMin : shootingMin) * 60;
+      const speedFactor = finalVideoSec > 0 ? totalShootingSec / finalVideoSec : 1;
+      if (metricSpeed) {
+        metricSpeed.innerHTML = `${Math.round(speedFactor)}x <small>en tiempo real</small>`;
+      }
+
+      const totalStorageGb = (totalPhotos * photoMb) / 1024;
+      if (metricStorage) {
+        metricStorage.innerHTML = `${totalStorageGb.toFixed(1)} GB <small>(${photoMb}MB/foto)</small>`;
+      }
+
+      const batteries = Math.max(1, Math.ceil(totalPhotos / 400));
+      if (metricBattery) {
+        metricBattery.innerHTML = `${batteries} ${batteries === 1 ? 'Batería' : 'Baterías'} <small>(~400 disp/bat)</small>`;
+      }
+
+      if (metricEndTime) {
+        const now = new Date();
+        const end = new Date(now.getTime() + (currentMode === 'shooting' ? finalShootingMin : shootingMin) * 60000);
+        const endStr = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+        metricEndTime.innerHTML = `${endStr} <small>(si inicias ahora)</small>`;
+      }
+
+      // Smart Alert Check
+      const effectiveInterval = currentMode === 'interval' ? finalIntervalSec : intervalSec;
+      if (smartAlert && smartAlertText) {
+        smartAlert.className = 'tl-smart-alert';
+        if (expSec > 0.01 && effectiveInterval <= expSec) {
+          smartAlert.classList.add('alert-danger');
+          smartAlertText.innerHTML = `⚠️ <strong>¡Atención!</strong> El intervalo (${effectiveInterval}s) es menor o igual al tiempo de exposición (${expSec}s). Aumenta el intervalo o reduce la obturación para no perder disparos.`;
+        } else if (expSec > 0.01 && effectiveInterval - expSec < 1.5) {
+          smartAlert.classList.add('alert-warn');
+          smartAlertText.innerHTML = `⚠️ <strong>Margen ajustado:</strong> Tienes solo ${(effectiveInterval - expSec).toFixed(1)}s de buffer. Asegúrate de que tu tarjeta SD sea rápida (V30 o superior).`;
+        } else {
+          smartAlert.classList.add('alert-ok');
+          const buffer = expSec > 0.01 ? (effectiveInterval - expSec).toFixed(0) : effectiveInterval;
+          smartAlertText.innerHTML = `✅ <strong>Configuración óptima:</strong> Buffer de ${buffer}s entre tomas para grabación continua sin saltos.`;
+        }
+      }
+    }
+
+    // Mode Switcher
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.getAttribute('data-mode') || 'video';
+
+        if (currentMode === 'video') {
+          groupInterval.style.display = 'flex';
+          groupShooting.style.display = 'flex';
+          groupDesiredVideo.style.display = 'none';
+        } else if (currentMode === 'shooting') {
+          groupInterval.style.display = 'flex';
+          groupShooting.style.display = 'none';
+          groupDesiredVideo.style.display = 'flex';
+        } else if (currentMode === 'interval') {
+          groupInterval.style.display = 'none';
+          groupShooting.style.display = 'flex';
+          groupDesiredVideo.style.display = 'flex';
+        }
+
+        updateCalculations();
+      });
+    });
+
+    // Presets
+    if (presetsContainer) {
+      const presetBtns = presetsContainer.querySelectorAll('.tl-preset-btn');
+      presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          presetBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const key = btn.getAttribute('data-preset');
+          const p = PRESETS[key];
+          if (p) {
+            intervalSec = p.interval;
+            shootingMin = p.shooting;
+            expSec = p.exp;
+            fps = p.fps;
+
+            if (fpsSelect) fpsSelect.value = String(fps);
+            if (expTimeSelect) expTimeSelect.value = String(expSec);
+
+            // Sync chips
+            intervalChips.forEach(c => c.classList.toggle('active', parseInt(c.getAttribute('data-val'), 10) === intervalSec));
+            shootingChips.forEach(c => c.classList.toggle('active', parseInt(c.getAttribute('data-val'), 10) === shootingMin));
+
+            updateCalculations();
+          }
+        });
+      });
+    }
+
+    // Interval Controls
+    if (intervalSlider) {
+      intervalSlider.addEventListener('input', (e) => {
+        intervalSec = parseInt(e.target.value, 10);
+        intervalChips.forEach(c => c.classList.toggle('active', parseInt(c.getAttribute('data-val'), 10) === intervalSec));
+        updateCalculations();
+      });
+    }
+
+    if (intervalMinusBtn) {
+      intervalMinusBtn.addEventListener('click', () => {
+        intervalSec = Math.max(1, intervalSec - 1);
+        updateCalculations();
+      });
+    }
+
+    if (intervalPlusBtn) {
+      intervalPlusBtn.addEventListener('click', () => {
+        intervalSec = Math.min(120, intervalSec + 1);
+        updateCalculations();
+      });
+    }
+
+    intervalChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        intervalChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        intervalSec = parseInt(chip.getAttribute('data-val'), 10);
+        updateCalculations();
+      });
+    });
+
+    // Shooting Duration Controls
+    if (shootingSlider) {
+      shootingSlider.addEventListener('input', (e) => {
+        shootingMin = parseInt(e.target.value, 10);
+        shootingChips.forEach(c => c.classList.toggle('active', parseInt(c.getAttribute('data-val'), 10) === shootingMin));
+        updateCalculations();
+      });
+    }
+
+    if (shootingMinusBtn) {
+      shootingMinusBtn.addEventListener('click', () => {
+        shootingMin = Math.max(5, shootingMin - 5);
+        updateCalculations();
+      });
+    }
+
+    if (shootingPlusBtn) {
+      shootingPlusBtn.addEventListener('click', () => {
+        shootingMin = Math.min(720, shootingMin + 5);
+        updateCalculations();
+      });
+    }
+
+    shootingChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        shootingChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        shootingMin = parseInt(chip.getAttribute('data-val'), 10);
+        updateCalculations();
+      });
+    });
+
+    // Desired Video Duration Controls
+    if (desiredVideoSlider) {
+      desiredVideoSlider.addEventListener('input', (e) => {
+        desiredVideoSec = parseInt(e.target.value, 10);
+        desiredVideoChips.forEach(c => c.classList.toggle('active', parseInt(c.getAttribute('data-val'), 10) === desiredVideoSec));
+        updateCalculations();
+      });
+    }
+
+    if (desiredVideoMinusBtn) {
+      desiredVideoMinusBtn.addEventListener('click', () => {
+        desiredVideoSec = Math.max(3, desiredVideoSec - 1);
+        updateCalculations();
+      });
+    }
+
+    if (desiredVideoPlusBtn) {
+      desiredVideoPlusBtn.addEventListener('click', () => {
+        desiredVideoSec = Math.min(180, desiredVideoSec + 1);
+        updateCalculations();
+      });
+    }
+
+    desiredVideoChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        desiredVideoChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        desiredVideoSec = parseInt(chip.getAttribute('data-val'), 10);
+        updateCalculations();
+      });
+    });
+
+    // Selects
+    if (fpsSelect) {
+      fpsSelect.addEventListener('change', (e) => {
+        fps = parseInt(e.target.value, 10);
+        updateCalculations();
+      });
+    }
+
+    if (formatSelect) {
+      formatSelect.addEventListener('change', (e) => {
+        photoMb = parseInt(e.target.value, 10);
+        updateCalculations();
+      });
+    }
+
+    if (expTimeSelect) {
+      expTimeSelect.addEventListener('change', (e) => {
+        expSec = parseFloat(e.target.value);
+        updateCalculations();
+      });
+    }
+
+    updateCalculations();
+  }
+
+  // =========================================================================
+  // 10. MULTI-SCREEN CONTROLLER & MAIN APP
   // =========================================================================
   function startPlanitApp() {
     let currentLat = 41.6148;
@@ -2150,6 +2617,7 @@
     const hyperfocalView= document.getElementById('hyperfocalView');
     const exposureView  = document.getElementById('exposureView');
     const trailsView    = document.getElementById('trailsView');
+    const timelapseView = document.getElementById('timelapseView');
 
     const screens = {
       mainView,
@@ -2157,7 +2625,8 @@
       calcView,
       hyperfocalView,
       exposureView,
-      trailsView
+      trailsView,
+      timelapseView
     };
 
     // Global Navbar & Dropdown Elements
@@ -2172,7 +2641,8 @@
       exposureView: 'Exposición',
       calcView: 'Regla NPF',
       hyperfocalView: 'Hiperfocal',
-      trailsView: 'Star Trails'
+      trailsView: 'Star Trails',
+      timelapseView: 'Timelapse'
     };
 
     function closeCalculatorsDropdown() {
@@ -2412,6 +2882,9 @@
 
     // Init Star Trails Simulator & Calculator
     initStarTrailsSimulator();
+
+    // Init Timelapse Calculator
+    initTimelapseCalculator();
 
     updateCoordsDisplay(currentLat, currentLng);
 

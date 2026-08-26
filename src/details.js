@@ -182,10 +182,10 @@ function drawTimelineChart(samples) {
 
   const W = rect.width;
   const H = 220;
-  const padLeft = 40;
-  const padRight = 20;
-  const padTop = 20;
-  const padBottom = 30;
+  const padLeft = 36;
+  const padRight = 16;
+  const padTop = 18;
+  const padBottom = 26;
 
   const plotW = W - padLeft - padRight;
   const plotH = H - padTop - padBottom;
@@ -202,129 +202,223 @@ function drawTimelineChart(samples) {
     return padLeft + (idx / (samples.length - 1)) * plotW;
   }
 
-  // Clear
-  ctx.clearRect(0, 0, W, H);
+  function renderBaseChart() {
+    ctx.clearRect(0, 0, W, H);
 
-  // Draw Background Dark Bands (Total Darkness & Galactic Center visible)
-  samples.forEach((s, i) => {
-    const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
-    const isGcDark = isDark && (s.gcAlt > 0);
+    // Draw Background Dark Bands (Total Darkness & Galactic Center visible)
+    samples.forEach((s, i) => {
+      const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
+      const isGcDark = isDark && (s.gcAlt > 0);
 
-    if (isDark) {
-      const x1 = getX(i);
-      const x2 = getX(Math.min(samples.length - 1, i + 1));
-      ctx.fillStyle = isGcDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.12)';
-      ctx.fillRect(x1, padTop, x2 - x1 + 1, plotH);
+      if (isDark) {
+        const x1 = getX(i);
+        const x2 = getX(Math.min(samples.length - 1, i + 1));
+        ctx.fillStyle = isGcDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.14)';
+        ctx.fillRect(x1, padTop, x2 - x1 + 1, plotH);
+      }
+    });
+
+    // Horizontal reference lines (0° horizon & -18° astronomical twilight)
+    ctx.lineWidth = 1;
+    const yHorizon = getY(0);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padLeft, yHorizon);
+    ctx.lineTo(W - padRight, yHorizon);
+    ctx.stroke();
+
+    const yTwilight = getY(-18);
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    ctx.beginPath();
+    ctx.moveTo(padLeft, yTwilight);
+    ctx.lineTo(W - padRight, yTwilight);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Axis labels
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('0°', padLeft - 4, yHorizon);
+    ctx.fillText('-18°', padLeft - 4, yTwilight);
+    ctx.fillText('30°', padLeft - 4, getY(30));
+    ctx.fillText('60°', padLeft - 4, getY(60));
+
+    // Time labels on X axis
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const hourStep = Math.max(1, Math.floor(samples.length / 8));
+    for (let i = 0; i < samples.length; i += hourStep) {
+      const s = samples[i];
+      const x = getX(i);
+      ctx.fillText(`${String(s.time.getHours()).padStart(2, '0')}:00`, x, H - padBottom + 6);
     }
-  });
 
-  // Draw Grid Lines (Altitudes: 0°, -18°, 30°, 60°)
-  ctx.lineWidth = 1;
-  
-  // 0° Horizon Line
-  const yHorizon = getY(0);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(padLeft, yHorizon);
-  ctx.lineTo(W - padRight, yHorizon);
-  ctx.stroke();
+    // Sun curve
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#F59E0B';
+    ctx.beginPath();
+    samples.forEach((s, i) => {
+      const x = getX(i);
+      const y = getY(s.sunAlt);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
 
-  // -18° Astronomical Twilight Line
-  const yTwilight = getY(-18);
-  ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-  ctx.setLineDash([2, 4]);
-  ctx.beginPath();
-  ctx.moveTo(padLeft, yTwilight);
-  ctx.lineTo(W - padRight, yTwilight);
-  ctx.stroke();
+    // Moon curve
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#38BDF8';
+    ctx.beginPath();
+    samples.forEach((s, i) => {
+      const x = getX(i);
+      const y = getY(s.moonAlt);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
 
-  ctx.setLineDash([]); // Reset dashed
-
-  // Labels on Y axis
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.font = '10px Inter, -apple-system, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('0°', padLeft - 6, yHorizon);
-  ctx.fillText('-18°', padLeft - 6, yTwilight);
-  ctx.fillText('30°', padLeft - 6, getY(30));
-  ctx.fillText('60°', padLeft - 6, getY(60));
-
-  // Time labels on X axis
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  const hourStep = Math.floor(samples.length / 8);
-  for (let i = 0; i < samples.length; i += hourStep) {
-    const s = samples[i];
-    const x = getX(i);
-    const timeStr = `${String(s.time.getHours()).padStart(2, '0')}:00`;
-    ctx.fillText(timeStr, x, H - padBottom + 8);
+    // Galactic Center curve
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#10B981';
+    ctx.beginPath();
+    samples.forEach((s, i) => {
+      const x = getX(i);
+      const y = getY(s.gcAlt);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
   }
 
-  // Draw Sun Altitude Curve (Orange)
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#F59E0B';
-  ctx.beginPath();
-  samples.forEach((s, i) => {
-    const x = getX(i);
-    const y = getY(s.sunAlt);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
+  renderBaseChart();
 
-  // Draw Moon Altitude Curve (Cyan)
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#38BDF8';
-  ctx.beginPath();
-  samples.forEach((s, i) => {
-    const x = getX(i);
-    const y = getY(s.moonAlt);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // Draw Galactic Center Altitude Curve (Emerald green / Magenta)
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = '#10B981';
-  ctx.beginPath();
-  samples.forEach((s, i) => {
-    const x = getX(i);
-    const y = getY(s.gcAlt);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // Mouse hover interactive tooltip
-  canvas.onmousemove = (e) => {
-    const mouseX = e.offsetX;
-    if (mouseX < padLeft || mouseX > W - padRight) {
-      if (tooltip) tooltip.classList.add('hidden');
-      return;
-    }
-    const ratio = (mouseX - padLeft) / plotW;
-    const sampleIdx = Math.round(ratio * (samples.length - 1));
+  function drawScrubber(sampleIdx) {
+    renderBaseChart();
+    if (sampleIdx === null || sampleIdx === undefined) return;
     const s = samples[sampleIdx];
     if (!s) return;
 
-    if (tooltip) {
-      tooltip.classList.remove('hidden');
-      tooltip.style.left = `${Math.min(W - 160, Math.max(10, mouseX - 70))}px`;
-      tooltip.style.top = `10px`;
-      const timeStr = `${String(s.time.getHours()).padStart(2, '0')}:${String(s.time.getMinutes()).padStart(2, '0')}`;
-      tooltip.innerHTML = `
-        <div class="tooltip-time">${timeStr}</div>
-        <div class="tooltip-row"><span class="dot-sun"></span> Sol: <strong>${s.sunAlt.toFixed(1)}°</strong></div>
-        <div class="tooltip-row"><span class="dot-moon"></span> Luna: <strong>${s.moonAlt.toFixed(1)}°</strong></div>
-        <div class="tooltip-row"><span class="dot-gc"></span> Vía Láctea: <strong>${s.gcAlt.toFixed(1)}°</strong></div>
-      `;
-    }
-  };
+    const x = getX(sampleIdx);
 
-  canvas.onmouseleave = () => {
+    // Draw vertical cursor line
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, padTop);
+    ctx.lineTo(x, H - padBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw indicator points on curves
+    function drawDot(y, color, glowColor) {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+    }
+
+    drawDot(getY(s.sunAlt), '#F59E0B', 'rgba(245, 158, 11, 0.8)');
+    drawDot(getY(s.moonAlt), '#38BDF8', 'rgba(56, 189, 248, 0.8)');
+    drawDot(getY(s.gcAlt), '#10B981', 'rgba(16, 185, 129, 0.8)');
+    ctx.restore();
+  }
+
+  function updateTooltipAt(clientX) {
+    const cRect = canvas.getBoundingClientRect();
+    const posX = clientX - cRect.left;
+    if (posX < padLeft || posX > W - padRight) {
+      hideScrubber();
+      return;
+    }
+
+    const ratio = Math.max(0, Math.min(1, (posX - padLeft) / plotW));
+    const sampleIdx = Math.round(ratio * (samples.length - 1));
+    const s = samples[sampleIdx];
+    if (!s || !tooltip) return;
+
+    drawScrubber(sampleIdx);
+
+    // Determine darkness status badge
+    const isDark = (s.sunAlt <= -18) && (s.moonAlt <= 0);
+    let badgeClass = 'state-twilight';
+    let badgeText = 'Crepúsculo';
+
+    if (s.sunAlt > -0.833) {
+      badgeClass = 'state-twilight';
+      badgeText = 'Día';
+    } else if (isDark && s.gcAlt > 0) {
+      badgeClass = 'state-gc';
+      badgeText = '🌌 Vía Láctea';
+    } else if (isDark) {
+      badgeClass = 'state-dark';
+      badgeText = '🌑 Oscuridad';
+    } else if (s.moonAlt > 0) {
+      badgeClass = 'state-moon';
+      badgeText = '🌗 Luna';
+    }
+
+    const timeStr = `${String(s.time.getHours()).padStart(2, '0')}:${String(s.time.getMinutes()).padStart(2, '0')}`;
+    tooltip.innerHTML = `
+      <div class="tooltip-time-header">
+        <span class="tooltip-time">${timeStr}</span>
+        <span class="tooltip-state-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="tooltip-row">
+        <span class="tooltip-row-label"><span class="dot-sun"></span> Sol</span>
+        <span class="tooltip-row-val">${s.sunAlt >= 0 ? '+' : ''}${s.sunAlt.toFixed(1)}°</span>
+      </div>
+      <div class="tooltip-row">
+        <span class="tooltip-row-label"><span class="dot-moon"></span> Luna</span>
+        <span class="tooltip-row-val">${s.moonAlt >= 0 ? '+' : ''}${s.moonAlt.toFixed(1)}°</span>
+      </div>
+      <div class="tooltip-row">
+        <span class="tooltip-row-label"><span class="dot-gc"></span> Vía Láctea</span>
+        <span class="tooltip-row-val">${s.gcAlt >= 0 ? '+' : ''}${s.gcAlt.toFixed(1)}°</span>
+      </div>
+    `;
+
+    tooltip.classList.remove('hidden');
+
+    // Fluid positioning: keep within canvas bounds
+    const tooltipW = tooltip.offsetWidth || 150;
+    let leftPos = posX - tooltipW / 2;
+    if (leftPos < 8) leftPos = 8;
+    if (leftPos + tooltipW > W - 8) leftPos = W - tooltipW - 8;
+
+    tooltip.style.left = `${leftPos}px`;
+    tooltip.style.top = '10px';
+  }
+
+  function hideScrubber() {
+    renderBaseChart();
     if (tooltip) tooltip.classList.add('hidden');
-  };
+  }
+
+  function onPointerMove(e) {
+    if (e.cancelable) e.preventDefault();
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    updateTooltipAt(clientX);
+  }
+
+  canvas.onpointerdown = onPointerMove;
+  canvas.onpointermove = onPointerMove;
+  canvas.onpointerup = hideScrubber;
+  canvas.onpointercancel = hideScrubber;
+  canvas.onmouseleave = hideScrubber;
+
+  canvas.ontouchstart = onPointerMove;
+  canvas.ontouchmove = onPointerMove;
+  canvas.ontouchend = hideScrubber;
+  canvas.ontouchcancel = hideScrubber;
 }

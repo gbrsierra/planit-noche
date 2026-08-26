@@ -128,6 +128,25 @@
               <span class="item-badge badge-emerald">Trails</span>
             </button>
 
+            <!-- Opción 5: Calculadora Timelapse -->
+            <button class="dropdown-menu-item" data-target="timelapseView" role="menuitem">
+              <div class="item-icon-box item-icon-purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                  <path d="M12 2v2"></path>
+                  <path d="M12 20v2"></path>
+                  <path d="m4.93 4.93 1.41 1.41"></path>
+                  <path d="m17.66 17.66 1.41 1.41"></path>
+                </svg>
+              </div>
+              <div class="item-text-box">
+                <span class="item-title">Calculadora de Timelapse</span>
+                <span class="item-desc">Disparos, intervalos, vídeo y SD</span>
+              </div>
+              <span class="item-badge badge-purple">Timelapse</span>
+            </button>
+
           </div>
         </div>
 
@@ -862,12 +881,237 @@
 
     </div>
 
+    <!-- ====================================================================
+         PANTALLA 7: CALCULADORA DE TIMELAPSE
+         ==================================================================== -->
+    <div id="timelapseView" class="app-container screen-view timelapse-screen hidden-screen">
+      
+      <!-- Header -->
+      <div class="panel-header-simple">
+        <h1 class="panel-header-title timelapse-title">Calculadora de Timelapse</h1>
+        <p class="timelapse-subtitle">Planificador de intervalos, duración de vídeo, fotos y almacenamiento</p>
+      </div>
+
+      <!-- 1. PRESETS RÁPIDOS -->
+      <div class="tl-presets-container">
+        <span class="tl-section-label">⚡ Escenas Habituales (Presets)</span>
+        <div class="tl-presets-scroll" id="tlPresetsContainer">
+          <button class="tl-preset-btn active" data-preset="milkyway">🌌 Vía Láctea</button>
+          <button class="tl-preset-btn" data-preset="startrails">💫 Star Trails Vídeo</button>
+          <button class="tl-preset-btn" data-preset="holygrail">🌅 Holy Grail (Atardecer)</button>
+          <button class="tl-preset-btn" data-preset="clouds-fast">☁️ Nubes Rápidas</button>
+          <button class="tl-preset-btn" data-preset="clouds-slow">⛅ Nubes Lentas</button>
+          <button class="tl-preset-btn" data-preset="city">🏙️ Tráfico Nocturno</button>
+          <button class="tl-preset-btn" data-preset="moon">🌘 Luna / Eclipse</button>
+        </div>
+      </div>
+
+      <!-- 2. SELECTOR DE MODO DE CÁLCULO -->
+      <div class="tl-mode-switcher" role="tablist">
+        <button class="tl-mode-btn active" data-mode="video" role="tab">🎬 Duración Vídeo</button>
+        <button class="tl-mode-btn" data-mode="shooting" role="tab">⏱️ Tiempo Sesión</button>
+        <button class="tl-mode-btn" data-mode="interval" role="tab">📐 Intervalo Ideal</button>
+      </div>
+
+      <!-- 3. RESULTADO PRINCIPAL (HERO VIDEO CARD) -->
+      <div class="tl-hero-result-card">
+        <div class="tl-hero-header">
+          <span class="tl-hero-tag" id="tlHeroTag">🎬 RESULTADO FINAL</span>
+          <span class="tl-hero-fps-tag" id="tlFpsBadge">@ 24 FPS</span>
+        </div>
+        <div class="tl-hero-main-row">
+          <div class="tl-hero-big-val" id="tlMainResultVal">00:15</div>
+          <div class="tl-hero-sub-val" id="tlMainResultSub">15.0 segundos de vídeo</div>
+        </div>
+        <div class="tl-hero-bar">
+          <div class="tl-hero-bar-fill" id="tlResultBarFill" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- 4. ALERTA INTELIGENTE DE INTERVALO VS EXPOSICIÓN -->
+      <div class="tl-smart-alert alert-ok" id="tlSmartAlert">
+        <span>✅</span>
+        <span id="tlSmartAlertText">Configuración óptima: buffer de 5s entre tomas para grabación en tarjeta SD.</span>
+      </div>
+
+      <!-- 5. PANEL DE CONTROLES E INPUTS -->
+      <div class="tl-card">
+
+        <!-- Intervalo entre disparos -->
+        <div class="tl-control-group" id="tlGroupInterval">
+          <div class="tl-label-row">
+            <span class="tl-field-title">⏱️ Intervalo entre Tomas</span>
+            <span class="tl-val-badge" id="tlIntervalDisplay">25 s</span>
+          </div>
+          <div class="tl-slider-stepper-row">
+            <button class="tl-step-btn" id="tlIntervalMinusBtn" aria-label="Disminuir intervalo">-</button>
+            <input type="range" id="tlIntervalSlider" class="tl-range-slider" min="1" max="120" step="1" value="25">
+            <button class="tl-step-btn" id="tlIntervalPlusBtn" aria-label="Aumentar intervalo">+</button>
+          </div>
+          <div class="tl-quick-chips" id="tlIntervalChips">
+            <button class="tl-chip" data-val="1">1s</button>
+            <button class="tl-chip" data-val="2">2s</button>
+            <button class="tl-chip" data-val="5">5s</button>
+            <button class="tl-chip" data-val="10">10s</button>
+            <button class="tl-chip" data-val="15">15s</button>
+            <button class="tl-chip active" data-val="25">25s</button>
+            <button class="tl-chip" data-val="30">30s</button>
+            <button class="tl-chip" data-val="60">60s</button>
+          </div>
+        </div>
+
+        <!-- Duración de la Sesión en Tiempo Real -->
+        <div class="tl-control-group" id="tlGroupShooting">
+          <div class="tl-label-row">
+            <span class="tl-field-title">⏳ Duración de la Sesión</span>
+            <span class="tl-val-badge" id="tlShootingDisplay">2h 30m (150 min)</span>
+          </div>
+          <div class="tl-slider-stepper-row">
+            <button class="tl-step-btn" id="tlShootingMinusBtn" aria-label="Disminuir sesión">-</button>
+            <input type="range" id="tlShootingSlider" class="tl-range-slider" min="5" max="720" step="5" value="150">
+            <button class="tl-step-btn" id="tlShootingPlusBtn" aria-label="Aumentar sesión">+</button>
+          </div>
+          <div class="tl-quick-chips" id="tlShootingChips">
+            <button class="tl-chip" data-val="30">30m</button>
+            <button class="tl-chip" data-val="60">1h</button>
+            <button class="tl-chip active" data-val="150">2.5h</button>
+            <button class="tl-chip" data-val="180">3h</button>
+            <button class="tl-chip" data-val="240">4h</button>
+            <button class="tl-chip" data-val="360">6h</button>
+            <button class="tl-chip" data-val="480">8h</button>
+          </div>
+        </div>
+
+        <!-- Duración Deseada del Vídeo (visible en Modo Sesión e Intervalo) -->
+        <div class="tl-control-group" id="tlGroupDesiredVideo" style="display: none;">
+          <div class="tl-label-row">
+            <span class="tl-field-title">🎞️ Duración de Vídeo Deseada</span>
+            <span class="tl-val-badge" id="tlDesiredVideoDisplay">15 s</span>
+          </div>
+          <div class="tl-slider-stepper-row">
+            <button class="tl-step-btn" id="tlDesiredVideoMinusBtn" aria-label="Disminuir duración vídeo">-</button>
+            <input type="range" id="tlDesiredVideoSlider" class="tl-range-slider" min="3" max="180" step="1" value="15">
+            <button class="tl-step-btn" id="tlDesiredVideoPlusBtn" aria-label="Aumentar duración vídeo">+</button>
+          </div>
+          <div class="tl-quick-chips" id="tlDesiredVideoChips">
+            <button class="tl-chip" data-val="5">5s</button>
+            <button class="tl-chip active" data-val="15">15s</button>
+            <button class="tl-chip" data-val="20">20s</button>
+            <button class="tl-chip" data-val="30">30s</button>
+            <button class="tl-chip" data-val="60">60s</button>
+          </div>
+        </div>
+
+        <!-- Configuración de Cámara: FPS, Formato y Exposición -->
+        <div class="tl-settings-grid">
+          <div class="tl-select-box">
+            <label for="tlFpsSelect">Velocidad Vídeo (FPS)</label>
+            <select id="tlFpsSelect" class="tl-select">
+              <option value="24" selected>24 fps (Cine Estándar)</option>
+              <option value="25">25 fps (PAL / TV Europa)</option>
+              <option value="30">30 fps (Web / Redes)</option>
+              <option value="60">60 fps (Hiperfluido)</option>
+            </select>
+          </div>
+
+          <div class="tl-select-box">
+            <label for="tlFormatSelect">Formato de Foto</label>
+            <select id="tlFormatSelect" class="tl-select">
+              <option value="25" selected>RAW 24MP (~25 MB)</option>
+              <option value="50">RAW 45-61MP (~50 MB)</option>
+              <option value="100">RAW 100MP (~100 MB)</option>
+              <option value="10">JPEG Fine (~10 MB)</option>
+              <option value="40">RAW + JPEG (~40 MB)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Exposición para validación de buffer -->
+        <div class="tl-select-box">
+          <label for="tlExpTimeSelect">Tiempo de Exposición de tu Cámara</label>
+          <select id="tlExpTimeSelect" class="tl-select">
+            <option value="0.001">Automático / Rápido (&lt; 1s)</option>
+            <option value="1">1 segundo</option>
+            <option value="2">2 segundos</option>
+            <option value="5">5 segundos</option>
+            <option value="10">10 segundos</option>
+            <option value="15">15 segundos</option>
+            <option value="20" selected>20 segundos</option>
+            <option value="25">25 segundos</option>
+            <option value="30">30 segundos</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- 6. TARJETAS DE MÉTRICAS -->
+      <div class="tl-metric-grid">
+        
+        <!-- Total de Fotos -->
+        <div class="tl-metric-card">
+          <div class="metric-icon-wrap">📸</div>
+          <div class="metric-info">
+            <span class="metric-title">TOTAL DE FOTOS</span>
+            <div class="metric-big-val" id="tlMetricPhotos">360 <small>disparos</small></div>
+          </div>
+        </div>
+
+        <!-- Factor de Aceleración -->
+        <div class="tl-metric-card">
+          <div class="metric-icon-wrap">⏩</div>
+          <div class="metric-info">
+            <span class="metric-title">ACELERACIÓN</span>
+            <div class="metric-big-val" id="tlMetricSpeed">600x <small>en tiempo real</small></div>
+          </div>
+        </div>
+
+        <!-- Espacio en Tarjeta SD -->
+        <div class="tl-metric-card">
+          <div class="metric-icon-wrap">💾</div>
+          <div class="metric-info">
+            <span class="metric-title">ESPACIO EN TARJETA</span>
+            <div class="metric-big-val" id="tlMetricStorage">9.0 GB <small>(RAW 25MB)</small></div>
+          </div>
+        </div>
+
+        <!-- Consumo de Batería -->
+        <div class="tl-metric-card">
+          <div class="metric-icon-wrap">🔋</div>
+          <div class="metric-info">
+            <span class="metric-title">BATERÍA ESTIMADA</span>
+            <div class="metric-big-val" id="tlMetricBattery">1 Batería <small>(~400 disp/bat)</small></div>
+          </div>
+        </div>
+
+        <!-- Hora Estimada de Finalización -->
+        <div class="tl-metric-card full-width">
+          <div class="metric-icon-wrap">🏁</div>
+          <div class="metric-info">
+            <span class="metric-title">FINALIZACIÓN DE SESIÓN</span>
+            <div class="metric-big-val" id="tlMetricEndTime">22:00 <small>(si inicias ahora)</small></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 7. CONSEJOS PROFESIONALES DE TIMELAPSE -->
+      <div class="tl-pro-tip">
+        <span class="tip-icon">💡</span>
+        <p><strong>Consejo Pro (Holy Grail &amp; 180°):</strong> Para transiciones día-a-noche sin parpadeo (flicker), ajusta la apertura fija en manual, utiliza enfoque manual (MF), desactiva el estabilizador en trípode y usa intervalómetro externo o de cámara con al menos 2s de margen sobre la exposición.</p>
+      </div>
+
+      <footer class="app-footer">
+        <p>Planit Noche &bull; Calculadora Profesional de Timelapse</p>
+      </footer>
+
+    </div>
+
   </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- App JS Bundle -->
-  <script src="app.bundle.js?v=20260826"></script>
+  <script src="app.bundle.js?v=20260826_2"></script>
 </body>
 </html>
