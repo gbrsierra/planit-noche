@@ -747,17 +747,28 @@ body {
   cursor: pointer;
   transition: all 0.18s ease;
   text-align: left;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
-.layer-card-btn:hover {
-  border-color: rgba(217, 35, 101, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+.layer-card-btn:focus,
+.layer-card-btn:focus-visible {
+  outline: none !important;
+}
+
+@media (hover: hover) {
+  .layer-card-btn:not(.active):hover {
+    border-color: rgba(217, 35, 101, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .layer-card-btn.active {
-  background: rgba(217, 35, 101, 0.15);
-  border-color: #f43f5e;
-  box-shadow: 0 0 15px rgba(217, 35, 101, 0.2);
+  background: rgba(217, 35, 101, 0.18) !important;
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 15px rgba(217, 35, 101, 0.25) !important;
 }
 
 .layer-thumb {

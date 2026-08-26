@@ -500,8 +500,14 @@
 
       if (markerInstance) markerInstance.bringToFront();
 
-      layerCardBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-map-type') === type);
+      const allBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
+      allBtns.forEach(btn => {
+        const btnType = btn.getAttribute('data-map-type');
+        if (btnType === type) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
       });
 
       try {
@@ -509,13 +515,20 @@
       } catch (e) {}
     }
 
-    // Set initial active button
-    layerCardBtns.forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-map-type') === currentMapType);
+    // Set initial active button and bind click events
+    const allLayerCardBtns = document.querySelectorAll('#mapLayersGrid .layer-card-btn');
+    allLayerCardBtns.forEach(btn => {
+      const btnType = btn.getAttribute('data-map-type');
+      if (btnType === currentMapType) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
       btn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        const type = btn.getAttribute('data-map-type');
-        switchLayer(type);
+        const clickedType = btn.getAttribute('data-map-type') || btnType;
+        switchLayer(clickedType);
       });
     });
 
