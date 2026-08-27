@@ -372,7 +372,7 @@
     mapInstance = L.map(containerId, {
       center: [initialLat, initialLng],
       zoom: 13,
-      zoomControl: true,
+      zoomControl: false,
       attributionControl: true
     });
 
@@ -3163,16 +3163,13 @@
 
     // Auto-detect current GPS location immediately upon opening the app
     if (navigator.geolocation) {
-      if (locationBtn) locationBtn.classList.add('spinning');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          if (locationBtn) locationBtn.classList.remove('spinning');
           const userLat = pos.coords.latitude;
           const userLng = pos.coords.longitude;
           setMapPosition(userLat, userLng, 13);
         },
         (err) => {
-          if (locationBtn) locationBtn.classList.remove('spinning');
           console.log('GPS auto-location not available:', err);
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
@@ -3243,18 +3240,14 @@
         return;
       }
       if (btnElement) btnElement.classList.add('spinning');
-      if (locationBtn) locationBtn.classList.add('spinning');
-      if (floatingGpsBtn) floatingGpsBtn.classList.add('spinning');
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          if (locationBtn) locationBtn.classList.remove('spinning');
-          if (floatingGpsBtn) floatingGpsBtn.classList.remove('spinning');
+          if (btnElement) btnElement.classList.remove('spinning');
           setMapPosition(pos.coords.latitude, pos.coords.longitude, 14);
         },
         (err) => {
-          if (locationBtn) locationBtn.classList.remove('spinning');
-          if (floatingGpsBtn) floatingGpsBtn.classList.remove('spinning');
+          if (btnElement) btnElement.classList.remove('spinning');
           alert('No se pudo acceder a tu ubicación. Por favor permite el acceso al GPS en el navegador.');
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -3268,12 +3261,7 @@
       });
     }
 
-    if (floatingGpsBtn) {
-      floatingGpsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        triggerGeolocation(floatingGpsBtn);
-      });
-    }
+
 
     // Search Logic
     async function executeSearch(query) {

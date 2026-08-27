@@ -46,7 +46,7 @@ export function initMap(containerId, initialLat = 41.6148, initialLng = 0.6268, 
   map = L.map(containerId, {
     center: [initialLat, initialLng],
     zoom: 12,
-    zoomControl: true,
+    zoomControl: false,
     attributionControl: true
   });
 
