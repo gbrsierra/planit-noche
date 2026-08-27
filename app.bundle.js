@@ -3163,16 +3163,19 @@
 
     // Auto-detect current GPS location immediately upon opening the app
     if (navigator.geolocation) {
+      if (locationBtn) locationBtn.classList.add('spinning');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
           const userLat = pos.coords.latitude;
           const userLng = pos.coords.longitude;
           setMapPosition(userLat, userLng, 13);
         },
         (err) => {
+          if (locationBtn) locationBtn.classList.remove('spinning');
           console.log('GPS auto-location not available:', err);
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
 
