@@ -598,16 +598,16 @@
     if (isNaN(numericLat) || isNaN(numericLng)) return;
 
     const latlng = L.latLng(numericLat, numericLng);
+    const targetZoom = zoom || mapInstance.getZoom();
 
-    // Set marker first so it appears at exact coords instantly
+    // 1. Posicionar el mapa EXACTAMENTE en las coords sin animación primero
+    mapInstance.setView(latlng, targetZoom, { animate: false });
+
+    // 2. Colocar el marcador después de que el mapa esté fijo
     markerInstance.setLatLng(latlng);
 
-    // Use setView for immediate precise positioning; panTo/flyTo can misplace on mobile
-    if (zoom) {
-      mapInstance.setView(latlng, zoom, { animate: true, duration: 0.6 });
-    } else {
-      mapInstance.setView(latlng, mapInstance.getZoom(), { animate: true, duration: 0.6 });
-    }
+    // 3. Pequeña animación suave de zoom-in visual (opcional, no desplaza el marcador)
+    mapInstance.flyTo(latlng, targetZoom, { animate: true, duration: 0.5 });
 
     if (locationChangeHandler) {
       locationChangeHandler(numericLat, numericLng);

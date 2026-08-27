@@ -92,12 +92,17 @@ export function initMap(containerId, initialLat = 41.6148, initialLng = 0.6268, 
 export function setMapLocation(lat, lng, zoom = null) {
   if (!map || !marker) return;
   const newLatLng = L.latLng(lat, lng);
+  const targetZoom = zoom || map.getZoom();
+
+  // 1. Fijar el mapa en las coords exactas sin animación
+  map.setView(newLatLng, targetZoom, { animate: false });
+
+  // 2. Colocar el marcador con el mapa ya fijo
   marker.setLatLng(newLatLng);
-  if (zoom) {
-    map.setView(newLatLng, zoom);
-  } else {
-    map.panTo(newLatLng);
-  }
+
+  // 3. Animación suave que no desplaza el pin
+  map.flyTo(newLatLng, targetZoom, { animate: true, duration: 0.5 });
+
   triggerLocationChange(lat, lng);
 }
 
